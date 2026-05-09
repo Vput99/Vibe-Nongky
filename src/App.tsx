@@ -72,69 +72,36 @@ interface Spot {
 const MOCK_SPOTS: Spot[] = [
   {
     id: '1',
-    name: 'Noir Coffee Lab',
-    location: 'Senopati',
-    distance: '3.2 km',
+    name: 'Kopi Brantas',
+    location: 'Mojoroto, Kediri',
+    distance: '1.2 km',
     vibe: '95% Quiet',
     rating: 4.8,
     reviews: 156,
     price: '$$',
     openUntil: '22:00',
-    imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDFR5Llm4BKuWJMm_WCgN9qx1oLZZScm_Fc5wb5cvNDHvy7p5zRXIXOFGpKU_Xcv0deGvPNedQX1-V6UBVd55v8y4G6amZcQkFfcAlbpVWRgUhvOzuaSd7I9uAUlBQEsSmQJCL4XAmCPyY5Hz-m0EXCq0FyL7ixL-4gATPyA3MMrmcN5QsF42njESp7OKkMjfUkBShESeOd7cqipZ78aBzKqHoYbiETxZMRfIwpaaoFlm3XzHvZeEt7bzYshbbaGAtCjAhOj5Z1Zto8',
-    imageUrls: ['https://lh3.googleusercontent.com/aida-public/AB6AXuDFR5Llm4BKuWJMm_WCgN9qx1oLZZScm_Fc5wb5cvNDHvy7p5zRXIXOFGpKU_Xcv0deGvPNedQX1-V6UBVd55v8y4G6amZcQkFfcAlbpVWRgUhvOzuaSd7I9uAUlBQEsSmQJCL4XAmCPyY5Hz-m0EXCq0FyL7ixL-4gATPyA3MMrmcN5QsF42njESp7OKkMjfUkBShESeOd7cqipZ78aBzKqHoYbiETxZMRfIwpaaoFlm3XzHvZeEt7bzYshbbaGAtCjAhOj5Z1Zto8'],
-    coordinates: { lat: -6.2343, lng: 106.8111 },
+    imageUrl: 'https://images.unsplash.com/photo-1501339817302-38203b9f9fef?auto=format&fit=crop&w=800&q=80',
+    imageUrls: ['https://images.unsplash.com/photo-1501339817302-38203b9f9fef?auto=format&fit=crop&w=800&q=80'],
+    coordinates: { lat: -7.8185, lng: 112.0005 },
     stats: { crowd: 'Quiet', wifi: '450 Mbps' },
     userReviews: [
-      { id: 'r1', user: 'NEURAL_USER', rating: 5, comment: 'Incredible quiet state attained. Neural synapses firing at max capacity.', sentiment: 'POSITIVE', date: '2024-05-01' },
-      { id: 'r2', user: 'GRID_RUNNER', rating: 4, comment: 'Wifi speed is optimal. Price point is balanced.', sentiment: 'NEUTRAL', date: '2024-04-28' }
+      { id: 'r1', user: 'LOCAL_HERO', rating: 5, comment: 'Vibe pinggir sungai yang mantap.', sentiment: 'POSITIVE', date: '2024-05-01' }
     ]
   },
   {
     id: '2',
-    name: 'Rustic Roast Hub',
-    location: 'Blok M',
-    distance: '0.8 km',
+    name: 'Kedai Simpang Lima',
+    location: 'Gumul, Kediri',
+    distance: '4.5 km',
     vibe: 'Busy',
     rating: 4.6,
     reviews: 210,
     price: '$',
     openUntil: '21:00',
-    imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDGvgwj5h_Z9HnFWxEzCUzXaj0BTDALaR7zqmXlClTyofIJgLohgaog4gTRuuqrMbPW2ceB3uSbXVNY5FfldEixay1u9QoHDGsEMq1ZgEHEeOjXRRAsgCTiq8tGcAPD74yjqwYIwAJ80A0oCgW-RSIitNhf6A-h3AmUS5Yn3tS9i__IknAWmij7aygS9gkYlIbbdFvk5x1VE7t2IraTBBtQxXvNlp0J53MlKUS-SIMUWEvBKR2g_WjZK8oFr0p8ZuNQlloDu-HbZWSf',
-    imageUrls: ['https://lh3.googleusercontent.com/aida-public/AB6AXuDGvgwj5h_Z9HnFWxEzCUzXaj0BTDALaR7zqmXlClTyofIJgLohgaog4gTRuuqrMbPW2ceB3uSbXVNY5FfldEixay1u9QoHDGsEMq1ZgEHEeOjXRRAsgCTiq8tGcAPD74yjqwYIwAJ80A0oCgW-RSIitNhf6A-h3AmUS5Yn3tS9i__IknAWmij7aygS9gkYlIbbdFvk5x1VE7t2IraTBBtQxXvNlp0J53MlKUS-SIMUWEvBKR2g_WjZK8oFr0p8ZuNQlloDu-HbZWSf'],
-    coordinates: { lat: -6.2441, lng: 106.8015 },
+    imageUrl: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=800&q=80',
+    imageUrls: ['https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=800&q=80'],
+    coordinates: { lat: -7.8285, lng: 112.0725 },
     stats: { crowd: 'Medium', wifi: '200 Mbps' },
-    userReviews: []
-  },
-  {
-    id: '3',
-    name: 'Brew & Bloom',
-    location: 'Senopati',
-    distance: '2.4 km',
-    vibe: 'Quiet Mood',
-    rating: 4.9,
-    reviews: 320,
-    price: '$$$',
-    openUntil: '23:00',
-    imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuANsAnwJZl8PGLROcdtG5itiPSs8luREyS10_baX6_WHy9V2o_mp7fx_B5EJgtTdh-ju4b46c-a9dkaDfcfELrcdE-A87RciA_Hh1xuTzpR8yL5coK-HbMd-H4C1IVkjoJv6I3ZjcDUNAMZkscCEBj-6J9i88MJRXsEtHbhLACFGNy7dNGvm0qz0aw2RZhqDNuflDd6bPpgiZeBiTJLYw8qiA2MyqgSh9W4RKa_cQUAaJmRJoOIZVDaJ23GC_V9Q3UA5Fov-S0smFpr',
-    imageUrls: ['https://lh3.googleusercontent.com/aida-public/AB6AXuANsAnwJZl8PGLROcdtG5itiPSs8luREyS10_baX6_WHy9V2o_mp7fx_B5EJgtTdh-ju4b46c-a9dkaDfcfELrcdE-A87RciA_Hh1xuTzpR8yL5coK-HbMd-H4C1IVkjoJv6I3ZjcDUNAMZkscCEBj-6J9i88MJRXsEtHbhLACFGNy7dNGvm0qz0aw2RZhqDNuflDd6bPpgiZeBiTJLYw8qiA2MyqgSh9W4RKa_cQUAaJmRJoOIZVDaJ23GC_V9Q3UA5Fov-S0smFpr'],
-    coordinates: { lat: -6.2312, lng: 106.8125 },
-    stats: { crowd: 'Quiet', wifi: 'Ultra Fast' },
-    userReviews: []
-  },
-  {
-    id: '4',
-    name: 'Kopi Senja Abyss',
-    location: 'Senopati',
-    distance: '2.4 km',
-    vibe: 'Specialty Roasts',
-    rating: 4.9,
-    reviews: 240,
-    price: '$$',
-    openUntil: '11:00 PM',
-    imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD7mfN11iO4e34KOxk2ddp7oNOgGe8W7MmZOOtgZFuAFKP412rb4qrB0QIr8xieIL9c5qCUjVPh8HhLuzba2GkQcEmAvA_oczKINjkdC_StDrcbI9_Nol2VmxpdQ_b62hwqjoZDoG2LS42LJ0Of6eLZ4R-xHX9wKq9LAgYgBwD13L12eA7nzdxCIPteZurdWqkaMXrq68x4fq_N9kR0Y3EJb-52OVHbp6Jwosi3P8s4JuoosLwmPGH4zoMAWC7v51H0uRpZu9W9FAoZ',
-    imageUrls: ['https://lh3.googleusercontent.com/aida-public/AB6AXuD7mfN11iO4e34KOxk2ddp7oNOgGe8W7MmZOOtgZFuAFKP412rb4qrB0QIr8xieIL9c5qCUjVPh8HhLuzba2GkQcEmAvA_oczKINjkdC_StDrcbI9_Nol2VmxpdQ_b62hwqjoZDoG2LS42LJ0Of6eLZ4R-xHX9wKq9LAgYgBwD13L12eA7nzdxCIPteZurdWqkaMXrq68x4fq_N9kR0Y3EJb-52OVHbp6Jwosi3P8s4JuoosLwmPGH4zoMAWC7v51H0uRpZu9W9FAoZ'],
-    coordinates: { lat: -6.2355, lng: 106.8140 },
-    stats: { crowd: 'Quiet (15%)', wifi: '450 Mbps' },
     userReviews: []
   }
 ];
@@ -1110,7 +1077,7 @@ const DetailPage = ({ spot, userLocation, onUpdateSpot, onBack, onShare }: { spo
 const MapView = ({ spots, userLocation, onSelectSpot }: { spots: Spot[], userLocation: {lat: number, lng: number} | null, onSelectSpot: (s: Spot) => void }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selectedSpot = spots.find(s => s.id === selectedId);
-  const defaultCenter = userLocation || { lat: -6.2343, lng: 106.8111 };
+  const defaultCenter = userLocation || { lat: -7.8480, lng: 112.0178 };
 
   if (!hasValidKey) {
     return (
@@ -1407,37 +1374,42 @@ export default function App() {
   }, [selectedSpot, currentPage]);
 
   useEffect(() => {
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const coords = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          };
-          setUserLocation(coords);
-          
-          // Reverse geocoding to get a readable name (fallback to coords)
-          fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${coords.lat},${coords.lng}&key=${MAP_KEY}`)
-            .then(res => res.json())
-            .then(data => {
-              if (data.results && data.results.length > 0) {
-                // Try to find the most specific city/locality/area name
-                const cityComponent = data.results[0].address_components.find(
-                  (c: any) => c.types.includes('locality') || c.types.includes('administrative_area_level_2')
-                );
-                const city = cityComponent?.long_name || 'TITIK_AKTIF';
-                setLocationName(`${city.toUpperCase()}.OS`);
-              } else {
-                setLocationName('GRID_AKTIF.OS');
-              }
-            })
-            .catch(() => setLocationName('GRID_LOCATED'));
-        },
-        (error) => {
-          console.warn("Geolocation access denied or unavailable", error);
+    if (!("geolocation" in navigator)) return;
+
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const coords = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        };
+        setUserLocation(coords);
+        
+        // Reverse geocoding for UI display
+        fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${coords.lat},${coords.lng}&key=${MAP_KEY}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.results && data.results.length > 0) {
+              const cityComponent = data.results[0].address_components.find(
+                (c: any) => c.types.includes('locality') || c.types.includes('administrative_area_level_2')
+              );
+              const city = cityComponent?.long_name || 'TITIK_AKTIF';
+              setLocationName(`${city.toUpperCase()}.OS`);
+            } else {
+              setLocationName('GRID_AKTIF.OS');
+            }
+          })
+          .catch(() => setLocationName('GRID_LOCATED'));
+      },
+      (error) => {
+        console.warn("Geolocation access denied", error);
+        if (error.code === 1) {
+          setLocationName('IZIN_DITOLAK');
         }
-      );
-    }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+
+    return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
   const handleUpdateSpot = (updatedSpot: Spot) => {
@@ -1492,6 +1464,20 @@ export default function App() {
       </AnimatePresence>
 
       <div className="min-h-screen bg-surface font-sans text-on-surface select-none">
+        {!userLocation && (
+          <div className="fixed inset-0 z-[100] bg-surface flex flex-col items-center justify-center space-y-8">
+            <motion.div 
+              animate={{ rotate: 360 }}
+              transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+              className="w-20 h-20 border-t-2 border-cyan-400 rounded-full shadow-[0_0_20px_rgba(34,211,238,0.5)]"
+            />
+            <div className="text-center space-y-2">
+              <h1 className="heading-bold text-2xl tracking-[0.3em]">MENCARI_SINYAL_GPS</h1>
+              <p className="label-mono opacity-40">HARAP_BERIKAN_IZIN_LOKASI_UNTUK_SINKRONISASI_GRID</p>
+            </div>
+          </div>
+        )}
+        
         {currentPage !== 'detail' && <TopAppBar />}
         
         <main className="relative">

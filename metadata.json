@@ -1,0 +1,11 @@
+{
+  "name": "Vibe nongki by vic",
+  "description": "Temukan tempat nongkrong asik dengan vibe terbaik di sekitarmu.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "AI-powered search",
+    "Real-time radar visualization"
+  ]
+}

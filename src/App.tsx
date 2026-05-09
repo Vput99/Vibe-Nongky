@@ -20,14 +20,20 @@ import { APIProvider, Map, AdvancedMarker, InfoWindow, Pin, useMapsLibrary, useM
 import { GoogleGenAI } from "@google/genai";
 
 // --- Auth / Key Config ---
-const API_KEY =
+const MAP_KEY =
   process.env.GOOGLE_MAPS_PLATFORM_KEY ||
   (import.meta as any).env?.VITE_GOOGLE_MAPS_PLATFORM_KEY ||
   (globalThis as any).GOOGLE_MAPS_PLATFORM_KEY ||
   '';
-const hasValidKey = Boolean(API_KEY) && API_KEY !== 'YOUR_API_KEY';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const GEMINI_KEY =
+  process.env.GEMINI_API_KEY ||
+  (import.meta as any).env?.VITE_GEMINI_API_KEY ||
+  '';
+
+const hasValidKey = Boolean(MAP_KEY) && MAP_KEY !== 'YOUR_API_KEY';
+
+const ai = new GoogleGenAI({ apiKey: GEMINI_KEY || 'MISSING_KEY' });
 
 // --- Types ---
 type Page = 'radar' | 'spots' | 'ai-finder' | 'detail';
@@ -138,7 +144,7 @@ const MOCK_SPOTS: Spot[] = [
 async function analyzeSentiment(text: string): Promise<'POSITIVE' | 'NEGATIVE' | 'NEUTRAL'> {
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-1.5-flash",
       contents: `Analyze the sentiment of this coffee shop review. Return ONLY one of these three words: POSITIVE, NEGATIVE, or NEUTRAL.
 
   Review: "${text}"`
@@ -834,7 +840,7 @@ const DetailPage = ({ spot, userLocation, onUpdateSpot, onBack, onShare }: { spo
         ${reviewText.substring(0, 3000)}`;
 
         const response = await ai.models.generateContent({
-          model: "gemini-3-flash-preview",
+          model: "gemini-1.5-flash",
           contents: prompt
         });
 
@@ -1131,7 +1137,7 @@ const MapView = ({ spots, userLocation, onSelectSpot }: { spots: Spot[], userLoc
         center={userLocation}
         defaultZoom={14}
         mapId="DEMO_MAP_ID"
-        internalUsageAttributionIds={['gmp_mcp_codeassist_v1_aistudio']}
+        // internalUsageAttributionIds={['gmp_mcp_codeassist_v1_aistudio']}
         style={{ width: '100%', height: '100%' }}
         disableDefaultUI={true}
         gestureHandling={'greedy'}
@@ -1411,7 +1417,7 @@ export default function App() {
           setUserLocation(coords);
           
           // Reverse geocoding to get a readable name (fallback to coords)
-          fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${coords.lat},${coords.lng}&key=${API_KEY}`)
+          fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${coords.lat},${coords.lng}&key=${MAP_KEY}`)
             .then(res => res.json())
             .then(data => {
               if (data.results && data.results.length > 0) {
@@ -1470,7 +1476,7 @@ export default function App() {
   };
 
   return (
-    <APIProvider apiKey={API_KEY} version="weekly">
+    <APIProvider apiKey={MAP_KEY || 'MISSING_KEY'} version="weekly">
       {/* Share Status Notification */}
       <AnimatePresence>
         {shareStatus && (

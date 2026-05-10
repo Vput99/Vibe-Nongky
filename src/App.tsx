@@ -810,6 +810,8 @@ const RouteView = ({ from, to }: { from: { lat: number, lng: number }, to: { lat
       (result, status) => {
         if (status === 'OK' && result) {
           directionsRenderer.setDirections(result);
+        } else {
+          console.error("DIRECTIONS_SERVICE_FAILED", status);
         }
       }
     );
@@ -842,7 +844,7 @@ const DetailPage = ({ spot, userLocation, onUpdateSpot, onBack, onShare }: { spo
         ${reviewText.substring(0, 3000)}`;
 
         const response = await ai.models.generateContent({
-          model: "gemini-1.5-flash",
+          model: "gemini-1.5-flash-latest",
           contents: prompt
         });
 
@@ -1085,6 +1087,15 @@ const DetailPage = ({ spot, userLocation, onUpdateSpot, onBack, onShare }: { spo
                   style={{ width: '100%', height: '100%' }}
                 >
                   <AdvancedMarker position={spot.coordinates} />
+                  {/* Penanda Posisi User */}
+                  {userLocation && (
+                    <AdvancedMarker position={userLocation}>
+                      <div className="relative flex items-center justify-center">
+                        <div className="absolute w-8 h-8 bg-cyan-400/30 rounded-full animate-ping" />
+                        <div className="w-4 h-4 bg-cyan-400 rounded-full border-2 border-white shadow-[0_0_15px_rgba(34,211,238,0.8)]" />
+                      </div>
+                    </AdvancedMarker>
+                  )}
                   {userLocation && <RouteView from={userLocation} to={spot.coordinates} />}
                 </Map>
               ) : (
@@ -1099,7 +1110,17 @@ const DetailPage = ({ spot, userLocation, onUpdateSpot, onBack, onShare }: { spo
       </main>
 
       <div className="fixed bottom-12 left-1/2 -translate-x-1/2 w-full px-12 z-[60] max-w-5xl">
-        <button className="w-full h-20 bg-on-surface text-surface heading-bold text-lg tracking-[0.4em] flex items-center justify-center gap-4 hover:opacity-90 active:translate-y-1 transition-all">
+        <button
+          onClick={() => {
+            if (userLocation) {
+              const url = `https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lng}&destination=${spot.coordinates.lat},${spot.coordinates.lng}&travelmode=driving`;
+              window.open(url, '_blank');
+            } else {
+              alert("SINKRONISASI_GPS_BELUM_SIAP");
+            }
+          }}
+          className="w-full h-20 bg-on-surface text-surface heading-bold text-lg tracking-[0.4em] flex items-center justify-center gap-4 hover:opacity-90 active:translate-y-1 transition-all"
+        >
           MULAI_NAVIGASI <ArrowRight size={24} />
         </button>
       </div>
@@ -1144,6 +1165,16 @@ const MapView = ({ spots, userLocation, onSelectSpot }: { spots: Spot[], userLoc
         disableDefaultUI={true}
         gestureHandling={'greedy'}
       >
+        {/* Penanda Posisi User */}
+        {userLocation && (
+          <AdvancedMarker position={userLocation}>
+            <div className="relative flex items-center justify-center">
+              <div className="absolute w-8 h-8 bg-cyan-400/30 rounded-full animate-ping" />
+              <div className="w-4 h-4 bg-cyan-400 rounded-full border-2 border-white shadow-[0_0_15px_rgba(34,211,238,0.8)]" />
+            </div>
+          </AdvancedMarker>
+        )}
+
         {spots.map(spot => (
           <AdvancedMarker
             key={spot.id}

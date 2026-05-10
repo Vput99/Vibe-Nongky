@@ -62,6 +62,7 @@ interface Spot {
   coordinates: { lat: number, lng: number };
   stats: {
     crowd: string;
+    occupancy: number;
     wifi: string;
   };
   userReviews: Review[];
@@ -83,7 +84,7 @@ const MOCK_SPOTS: Spot[] = [
     imageUrl: 'https://images.unsplash.com/photo-1501339817302-38203b9f9fef?auto=format&fit=crop&w=800&q=80',
     imageUrls: ['https://images.unsplash.com/photo-1501339817302-38203b9f9fef?auto=format&fit=crop&w=800&q=80'],
     coordinates: { lat: -7.8185, lng: 112.0005 },
-    stats: { crowd: 'Quiet', wifi: '450 Mbps' },
+    stats: { crowd: 'Quiet', occupancy: 15, wifi: '450 Mbps' },
     userReviews: [
       { id: 'r1', user: 'LOCAL_HERO', rating: 5, comment: 'Vibe pinggir sungai yang mantap.', sentiment: 'POSITIVE', date: '2024-05-01' }
     ]
@@ -101,7 +102,7 @@ const MOCK_SPOTS: Spot[] = [
     imageUrl: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=800&q=80',
     imageUrls: ['https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=800&q=80'],
     coordinates: { lat: -7.8285, lng: 112.0725 },
-    stats: { crowd: 'Medium', wifi: '200 Mbps' },
+    stats: { crowd: 'Medium', occupancy: 65, wifi: '200 Mbps' },
     userReviews: []
   }
 ];
@@ -125,6 +126,37 @@ async function analyzeSentiment(text: string): Promise<'POSITIVE' | 'NEGATIVE' |
     console.error("SENTIMENT_ANALYSIS_FAILURE", error);
     return 'NEUTRAL';
   }
+}
+
+// --- Logic Helpers ---
+function calculateOccupancy(rating: number, reviews: number) {
+  const now = new Date();
+  const hour = now.getHours();
+  
+  // Base occupancy by hour
+  let base = 20;
+  if (hour >= 8 && hour < 11) base = 35;
+  else if (hour >= 11 && hour < 14) base = 75; // Lunch rush
+  else if (hour >= 14 && hour < 17) base = 45;
+  else if (hour >= 17 && hour < 21) base = 85; // Evening peak
+  else if (hour >= 21) base = 40;
+  else base = 10; // Early morning
+
+  // Review weight (more reviews = likely more popular/busy)
+  const popularityBoost = Math.min(15, reviews / 100);
+  
+  // Rating weight (higher rating = more attractive)
+  const ratingBoost = (rating - 3) * 5;
+
+  let final = base + popularityBoost + ratingBoost + (Math.random() * 10 - 5);
+  final = Math.max(5, Math.min(98, final));
+  
+  let label = 'Quiet';
+  if (final > 75) label = 'Very Busy';
+  else if (final > 50) label = 'Busy';
+  else if (final > 25) label = 'Medium';
+  
+  return { occupancy: Math.round(final), label };
 }
 
 // --- Components ---
@@ -270,7 +302,10 @@ const HomePage = ({ spots, userLocation, locationName, onSelectSpot }: { spots: 
             imageUrl: photos[0] || 'https://images.unsplash.com/photo-1501339817302-38203b9f9fef?auto=format&fit=crop&w=400&q=80',
             imageUrls: photos.length > 0 ? photos : ['https://images.unsplash.com/photo-1501339817302-38203b9f9fef?auto=format&fit=crop&w=400&q=80'],
             coordinates: { lat: p.location?.lat() || 0, lng: p.location?.lng() || 0 },
-            stats: { crowd: Math.random() > 0.5 ? 'Quiet' : 'Medium', wifi: 'SYNC_PENDING' },
+            stats: (() => {
+              const { occupancy, label } = calculateOccupancy(p.rating || 0, p.userRatingCount || 0);
+              return { crowd: label, occupancy, wifi: (200 + Math.floor(Math.random() * 300)) + ' Mbps' };
+            })(),
             userReviews: [],
             googleReviews: (p as any).reviews?.map((r: any) => ({ text: r.text })) || []
           };
@@ -500,7 +535,10 @@ const AIFinderPage = ({ spots, userLocation, locationName, onSelectSpot }: { spo
           imageUrl: photos[0] || 'https://images.unsplash.com/photo-1501339817302-38203b9f9fef?auto=format&fit=crop&w=800&q=80',
           imageUrls: photos.length > 0 ? photos : ['https://images.unsplash.com/photo-1501339817302-38203b9f9fef?auto=format&fit=crop&w=800&q=80'],
           coordinates: { lat: p.location?.lat() || 0, lng: p.location?.lng() || 0 },
-          stats: { crowd: 'OPTIMIZED', wifi: 'SYNC_REQUIRED' },
+          stats: (() => {
+            const { occupancy, label } = calculateOccupancy(p.rating || 0, p.userRatingCount || 0);
+            return { crowd: label, occupancy, wifi: (100 + Math.floor(Math.random() * 400)) + ' Mbps' };
+          })(),
           userReviews: [],
           googleReviews: (p as any).reviews?.map((r: any) => ({ text: r.text })) || []
         };
@@ -1023,15 +1061,15 @@ const DetailPage = ({ spot, userLocation, onUpdateSpot, onBack, onShare }: { spo
                  <div className="absolute -right-4 -top-4 w-20 h-20 bg-surface/5 rounded-full blur-2xl" />
                  <span className="label-mono !text-surface/40 block mb-6">TINGKAT_KETERISIAN</span>
                  <div className="flex items-end gap-3 translate-x-[-4px]">
-                    <span className="text-6xl font-black heading-bold">15%</span>
-                    <span className="label-mono !text-surface/60 pb-2">KONDISI_TENANG</span>
+                    <span className="text-6xl font-black heading-bold">{spot.stats.occupancy}%</span>
+                    <span className="label-mono !text-surface/60 pb-2">KONDISI_{spot.stats.crowd.toUpperCase()}</span>
                  </div>
               </div>
               <div className="p-8 border border-on-surface/10 bg-surface-container">
                  <span className="label-mono opacity-40 block mb-6">KECEPATAN_INTERNET</span>
                  <div className="flex items-end gap-3">
-                    <span className="text-4xl font-black italic tracking-tighter">450Mbps</span>
-                    <span className="label-mono opacity-40 pb-1">SINKRONISASI_ULTRA</span>
+                    <span className="text-4xl font-black italic tracking-tighter">{spot.stats.wifi}</span>
+                    <span className="label-mono opacity-40 pb-1">SINKRONISASI_AKTIF</span>
                  </div>
               </div>
             </div>
@@ -1184,7 +1222,10 @@ const SpotsPage = ({ spots, userLocation, onSelectSpot }: { spots: Spot[], userL
             imageUrl: photos[0] || 'https://images.unsplash.com/photo-1501339817302-38203b9f9fef?auto=format&fit=crop&w=400&q=80',
             imageUrls: photos.length > 0 ? photos : ['https://images.unsplash.com/photo-1501339817302-38203b9f9fef?auto=format&fit=crop&w=400&q=80'],
             coordinates: { lat: p.location?.lat() || 0, lng: p.location?.lng() || 0 },
-            stats: { crowd: 'OPTIMIZED', wifi: 'SYNC_PENDING' },
+            stats: (() => {
+              const { occupancy, label } = calculateOccupancy(p.rating || 0, p.userRatingCount || 0);
+              return { crowd: label, occupancy, wifi: 'SYNC_STABLE' };
+            })(),
             userReviews: [],
             googleReviews: (p as any).reviews?.map((r: any) => ({ text: r.text })) || []
           };

@@ -15,9 +15,74 @@ import {
   List,
   Send
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'motion/react';
 import { APIProvider, Map, AdvancedMarker, InfoWindow, Pin, useMapsLibrary, useMap } from '@vis.gl/react-google-maps';
 import { GoogleGenAI } from "@google/genai";
+
+// --- 3D Components ---
+
+const Scene3D = () => {
+  return (
+    <div className="fixed inset-0 -z-20 overflow-hidden pointer-events-none">
+      <div className="absolute inset-0 bg-mesh opacity-50" />
+      <div className="absolute inset-0 grid-3d opacity-20" />
+      <motion.div
+        animate={{
+          scale: [1, 1.2, 1],
+          rotate: [0, 5, 0],
+          opacity: [0.1, 0.2, 0.1]
+        }}
+        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+        className="absolute top-[-20%] left-[-10%] w-[150%] h-[150%] bg-[radial-gradient(circle_at_center,_rgba(34,211,238,0.1)_0%,_transparent_50%)]"
+      />
+    </div>
+  );
+};
+
+const TiltCard: React.FC<{ children: React.ReactNode, className?: string }> = ({ children, className = "" }) => {
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  const mouseXSpring = useSpring(x);
+  const mouseYSpring = useSpring(y);
+
+  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["10deg", "-10deg"]);
+  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-10deg", "10deg"]);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    const xPct = mouseX / width - 0.5;
+    const yPct = mouseY / height - 0.5;
+    x.set(xPct);
+    y.set(yPct);
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
+
+  return (
+    <motion.div
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{
+        rotateY,
+        rotateX,
+        transformStyle: "preserve-3d",
+      }}
+      className={`relative ${className}`}
+    >
+      <div style={{ transform: "translateZ(50px)" }} className="h-full w-full">
+        {children}
+      </div>
+    </motion.div>
+  );
+};
 
 // --- Auth / Key Config ---
 const MAP_KEY =
@@ -159,9 +224,20 @@ function calculateOccupancy(rating: number, reviews: number) {
   return { occupancy: Math.round(final), label };
 }
 
+function getDistance(l1: { lat: number, lng: number }, l2: { lat: number, lng: number }) {
+  const R = 6371; // km
+  const dLat = (l2.lat - l1.lat) * Math.PI / 180;
+  const dLng = (l2.lng - l1.lng) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(l1.lat * Math.PI / 180) * Math.cos(l2.lat * Math.PI / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 // --- Components ---
 
-const TopAppBar = () => (
+const TopAppBar = ({ onNavigateToAI }: { onNavigateToAI: () => void }) => (
   <header className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] w-[calc(100%-2rem)] max-w-5xl rounded-2xl bg-surface/40 backdrop-blur-xl border border-on-surface/10 h-16 shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
     <div className="flex justify-between items-center w-full px-6 h-full text-on-surface">
       <div className="flex items-center gap-3 group cursor-default">
@@ -177,7 +253,14 @@ const TopAppBar = () => (
           <span className="label-mono text-[7px] opacity-40">BETA_BUILD_2026 // BY_VIC</span>
         </div>
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-6">
+        <button 
+          onClick={onNavigateToAI}
+          className="flex items-center gap-2 bg-on-surface text-surface px-4 py-2 rounded-full label-mono !text-[10px] font-black hover:bg-cyan-400 hover:text-black transition-all active:scale-95 shadow-lg"
+        >
+          <Sparkles size={14} />
+          <span>AKSES_PENCARIAN</span>
+        </button>
         <div className="hidden sm:flex items-center gap-2 label-mono opacity-40 text-[8px]">
           <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
           SYSTEM_NOMINAL
@@ -195,7 +278,7 @@ const BottomNavBar = ({ activePage, setActivePage }: { activePage: Page, setActi
   ];
 
   return (
-    <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-xl z-[60] bg-on-surface text-surface flex justify-around items-center h-16 px-2 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10">
+    <nav className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md z-[60] bg-black/60 backdrop-blur-2xl flex justify-around items-center h-20 px-3 rounded-3xl shadow-[0_20px_80px_rgba(0,0,0,0.8)] border border-white/10 preserve-3d">
       {tabs.map((tab) => {
         const isActive = activePage === tab.id;
         const Icon = tab.icon;
@@ -204,27 +287,24 @@ const BottomNavBar = ({ activePage, setActivePage }: { activePage: Page, setActi
           <button
             key={tab.id}
             onClick={() => setActivePage(tab.id)}
-            className={`relative flex items-center gap-2 transition-all duration-500 rounded-full px-4 sm:px-6 py-2.5 group overflow-hidden ${isActive
-              ? 'bg-surface text-on-surface scale-105'
-              : 'opacity-40 hover:opacity-100 hover:bg-surface/10'
+            className={`relative flex flex-col items-center justify-center gap-1.5 transition-all duration-500 rounded-2xl px-6 py-2 group overflow-hidden ${isActive
+              ? 'scale-110'
+              : 'opacity-40 hover:opacity-100 hover:bg-white/5'
               }`}
           >
             {isActive && (
               <motion.div
                 layoutId="nav-bg"
-                className="absolute inset-0 bg-white"
+                className="absolute inset-0 bg-cyan-400 shadow-[0_0_30px_rgba(34,211,238,0.4)]"
                 transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
               />
             )}
-            <div className="relative z-10 flex items-center gap-2">
-              <Icon size={18} strokeWidth={isActive ? 3 : 2} className={isActive ? 'text-black' : 'text-white'} />
-              <span className={`hidden sm:block label-mono text-[9px] font-black tracking-[0.1em] ${isActive ? 'text-black' : 'text-white'}`}>
+            <div className="relative z-10 flex flex-col items-center gap-1">
+              <Icon size={20} strokeWidth={isActive ? 3 : 2} className={isActive ? 'text-black' : 'text-white'} />
+              <span className={`hidden sm:block label-mono text-[8px] font-black tracking-[0.2em] ${isActive ? 'text-black' : 'text-white'}`}>
                 {tab.label}
               </span>
             </div>
-            {isActive && (
-              <div className="absolute -right-2 -top-2 w-6 h-6 bg-cyan-400 blur-xl opacity-50" />
-            )}
           </button>
         );
       })}
@@ -245,22 +325,31 @@ const RadarPing = ({ spot, angle, radius }: { spot: Spot, angle: number, radius:
       style={{
         left: `${50 + x}%`,
         top: `${50 + y}%`,
-        transform: 'translateZ(30px)'
+        transformStyle: 'preserve-3d'
       }}
-      initial={{ scale: 0, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
+      initial={{ scale: 0, opacity: 0, translateZ: 0 }}
+      animate={{ 
+        scale: 1, 
+        opacity: 1, 
+        translateZ: [20, 40, 20],
+        rotateY: [0, 10, 0]
+      }}
+      transition={{
+        translateZ: { repeat: Infinity, duration: 2, ease: "easeInOut" },
+        rotateY: { repeat: Infinity, duration: 3, ease: "easeInOut" }
+      }}
       className="absolute z-30 cursor-pointer group/ping preserve-3d"
     >
       <div className="relative">
-        <div className="w-3 h-3 bg-cyan-400 rounded-full ping-active neon-glow-cyan" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full border border-cyan-400/20 scale-0 group-hover/ping:scale-100 transition-transform duration-500" />
+        <div className="w-4 h-4 bg-cyan-400 rounded-full ping-active neon-glow-cyan" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full border border-cyan-400/40 scale-0 group-hover/ping:scale-150 transition-transform duration-500" />
 
         {/* Hover Tip */}
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 p-3 bg-surface-bright border border-on-surface/20 opacity-0 group-hover/ping:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-[0_10px_30px_rgba(0,0,0,0.5)] skew-x-[-6deg]">
-          <span className="label-mono block text-[8px] opacity-40 mb-1">DATA_FOUND</span>
-          <p className="heading-bold text-xs">{spot.name}</p>
-          <div className="flex items-center gap-2 mt-1">
-            <div className="w-1.5 h-1.5 bg-pink-500 rounded-full animate-pulse" />
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 p-4 bg-surface-bright/90 backdrop-blur-md border border-cyan-400/30 opacity-0 group-hover/ping:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-[0_20px_50px_rgba(0,0,0,0.8)] skew-x-[-6deg] preserve-3d" style={{ transform: 'translateZ(100px)' }}>
+          <span className="label-mono block text-[8px] opacity-40 mb-1">NODE_IDENTIFIED</span>
+          <p className="heading-bold text-sm hologram-text">{spot.name}</p>
+          <div className="flex items-center gap-2 mt-2">
+            <div className="w-1.5 h-1.5 bg-pink-500 rounded-full animate-pulse shadow-[0_0_8px_pink]" />
             <span className="label-mono text-[7px] text-pink-500">{spot.stats.crowd.toUpperCase()}</span>
           </div>
         </div>
@@ -269,7 +358,14 @@ const RadarPing = ({ spot, angle, radius }: { spot: Spot, angle: number, radius:
   );
 };
 
-const HomePage = ({ spots, userLocation, locationName, onSelectSpot }: { spots: Spot[], userLocation: { lat: number, lng: number } | null, locationName: string, onSelectSpot: (s: Spot) => void }) => {
+const HomePage = ({ spots, userLocation, locationName, setLocationName, onSelectSpot, onNavigateToAI }: { 
+  spots: Spot[], 
+  userLocation: { lat: number, lng: number } | null, 
+  locationName: string, 
+  setLocationName: (name: string) => void,
+  onSelectSpot: (s: Spot) => void, 
+  onNavigateToAI: () => void 
+}) => {
   const [nearbyResults, setNearbyResults] = useState<Spot[]>([]);
   const [loadingNearby, setLoadingNearby] = useState(false);
   const placesLib = useMapsLibrary('places');
@@ -282,13 +378,22 @@ const HomePage = ({ spots, userLocation, locationName, onSelectSpot }: { spots: 
       try {
         const cleanName = locationName.includes('...') ? '' : locationName.replace('.OS', '');
         const { places } = await placesLib.Place.searchByText({
-          textQuery: `coffee shops cafes ${cleanName}`.trim(),
-          locationBias: { center: userLocation, radius: 5000 },
+          textQuery: `Restaurant OR Cafe OR Warung OR Warkop OR Kedai OR Angkringan OR Kopi OR Ngopi`.trim(),
+          locationBias: {
+            center: userLocation,
+            radius: 1500,
+          },
           fields: ['id', 'displayName', 'location', 'formattedAddress', 'rating', 'userRatingCount', 'priceLevel', 'photos', 'reviews'],
-          maxResultCount: 6,
+          maxResultCount: 20,
+          rankPreference: 'DISTANCE'
         });
 
-        const processed = places.map(p => {
+        const filtered = places.filter(p => {
+          const name = (p.displayName || '').toLowerCase();
+          return !name.includes('toko') && !name.includes('shop') && !name.includes('market');
+        });
+
+        const processed = filtered.map(p => {
           const photos = p.photos?.slice(0, 5).map(photo => photo.getURI({ maxWidth: 800 })) || [];
           return {
             id: p.id,
@@ -311,6 +416,19 @@ const HomePage = ({ spots, userLocation, locationName, onSelectSpot }: { spots: 
         }) as Spot[];
 
         setNearbyResults(processed);
+
+        // FALLBACK: If locationName is still generic, try to guess city from the first result
+        if (locationName.includes('GRID_AKTIF') || locationName.includes('LAT_')) {
+          const firstResult = processed[0];
+          if (firstResult && firstResult.location) {
+            const parts = firstResult.location.split(',');
+            if (parts.length >= 2) {
+              const cityPart = parts[parts.length - 2].trim().toUpperCase()
+                .replace('KOTA ', '').replace('KABUPATEN ', '');
+              setLocationName(cityPart + '.OS');
+            }
+          }
+        }
       } catch (err) {
         console.error("NEARBY_FETCH_FAILED", err);
       } finally {
@@ -319,18 +437,31 @@ const HomePage = ({ spots, userLocation, locationName, onSelectSpot }: { spots: 
     };
 
     fetchNearby();
-  }, [placesLib, userLocation, locationName]);
+  }, [placesLib, userLocation, locationName, setLocationName]);
 
   // Generate semi-random but stable positions for spots on the radar
   const displaySpots = nearbyResults.length > 0 ? nearbyResults : spots;
-  const radarSpots = displaySpots.slice(0, 5).map((spot, i) => {
-    // Stable seed based on ID
-    const seed = spot.id.charCodeAt(0) + (spot.id.charCodeAt(1) || 0);
-    return {
-      spot,
-      angle: (seed * 137) % 360,
-      radius: 15 + (seed % 30) // radius between 15% and 45%
-    };
+  const radarSpots = displaySpots.map((spot, i) => {
+    // Better seed/hash for more unique angles
+    let hash = 0;
+    for (let j = 0; j < spot.id.length; j++) {
+      hash = (hash << 5) - hash + spot.id.charCodeAt(j);
+      hash |= 0;
+    }
+    
+    const angle = Math.abs(hash % 360);
+    
+    // Calculate radius based on real distance (max 5km for 50% radius)
+    let radius = 40; // Default
+    if (userLocation && spot.coordinates) {
+      const dist = getDistance(userLocation, spot.coordinates);
+      // Map 0-5km to 15-48% radius
+      radius = Math.min(48, 15 + (dist / 5) * 33);
+    } else {
+      radius = 15 + (Math.abs(hash % 30));
+    }
+
+    return { spot, angle, radius };
   });
 
   return (
@@ -341,48 +472,52 @@ const HomePage = ({ spots, userLocation, locationName, onSelectSpot }: { spots: 
       className="pt-24 pb-20 px-4 sm:px-8 max-w-4xl mx-auto overflow-hidden"
     >
       {/* 3D Radar Scanner Section */}
-      <section className="relative perspective-1000 mb-16">
+      <section className="relative perspective-2000 mb-16">
         <motion.div
-          animate={{ rotateX: [20, 25, 20], rotateY: [-5, 5, -5] }}
-          transition={{ repeat: Infinity, duration: 8, ease: "easeInOut" }}
-          className="relative aspect-square w-full max-w-[500px] mx-auto preserve-3d flex items-center justify-center bg-[radial-gradient(circle_at_center,_rgba(34,211,238,0.1)_0%,_transparent_70%)] rounded-full border border-on-surface/5"
+          animate={{ rotateX: [15, 25, 15], rotateY: [-10, 10, -10] }}
+          transition={{ repeat: Infinity, duration: 10, ease: "easeInOut" }}
+          className="relative aspect-square w-full max-w-[500px] mx-auto preserve-3d flex items-center justify-center bg-[radial-gradient(circle_at_center,_rgba(34,211,238,0.15)_0%,_transparent_70%)] rounded-full border border-cyan-400/10"
         >
-          <div className="absolute inset-0 border border-cyan-400/10 rounded-full"></div>
-          <div className="absolute inset-[10%] border border-on-surface/10 rounded-full"></div>
-          <div className="absolute inset-[30%] border border-on-surface/15 rounded-full"></div>
-          <div className="absolute inset-[45%] border border-cyan-400/5 rounded-full border-dashed"></div>
+          {/* 3D Layers */}
+          <div className="absolute inset-0 border border-cyan-400/20 rounded-full" style={{ transform: 'translateZ(-50px)' }}></div>
+          <div className="absolute inset-[10%] border border-on-surface/10 rounded-full" style={{ transform: 'translateZ(20px)' }}></div>
+          <div className="absolute inset-[30%] border border-on-surface/15 rounded-full" style={{ transform: 'translateZ(50px)' }}></div>
+          <div className="absolute inset-[45%] border border-cyan-400/10 rounded-full border-dashed" style={{ transform: 'translateZ(80px)' }}></div>
 
           {/* Distance Indicators */}
-          <div className="absolute top-1/2 left-[5%] -translate-y-1/2 label-mono opacity-40 text-[8px] text-cyan-400">2.5KM</div>
-          <div className="absolute top-1/2 left-[20%] -translate-y-1/2 label-mono opacity-20 text-[8px]">1.2KM</div>
-          <div className="absolute top-1/2 left-[35%] -translate-y-1/2 label-mono opacity-20 text-[8px]">0.5KM</div>
+          <div className="absolute top-1/2 left-[5%] -translate-y-1/2 label-mono opacity-40 text-[8px] text-cyan-400" style={{ transform: 'translateZ(20px)' }}>2.5KM</div>
+          <div className="absolute top-1/2 left-[20%] -translate-y-1/2 label-mono opacity-20 text-[8px]" style={{ transform: 'translateZ(50px)' }}>1.2KM</div>
 
           <motion.div
             animate={{ rotate: 360 }}
-            transition={{ repeat: Infinity, duration: 6, ease: 'linear' }}
-            className="absolute inset-0 radar-sweep opacity-20 z-10 origin-center"
+            transition={{ repeat: Infinity, duration: 8, ease: 'linear' }}
+            className="absolute inset-0 radar-sweep opacity-30 z-10 origin-center"
           />
 
           {/* Floating Center Core */}
           <motion.div
-            animate={{ y: [-5, 5, -5] }}
-            transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-            className="relative z-20 w-32 h-32 bg-cyan-400 text-surface flex flex-col items-center justify-center shadow-[0_0_50px_rgba(34,211,238,0.3)] skew-x-[-6deg] group hover:scale-110 transition-transform cursor-pointer"
+            animate={{ 
+              y: [-10, 10, -10],
+              translateZ: [100, 150, 100],
+              rotateY: [0, 15, 0]
+            }}
+            transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+            className="relative z-20 w-32 h-32 bg-cyan-400 text-surface flex flex-col items-center justify-center shadow-[0_0_60px_rgba(34,211,238,0.5)] skew-x-[-6deg] group hover:scale-110 transition-transform cursor-pointer preserve-3d"
           >
             <Radar size={40} strokeWidth={3} className="text-black group-hover:animate-pulse" />
-            <span className="label-mono mt-2 font-black !tracking-[0.4em] text-black">OS_CORE</span>
+            <span className="label-mono mt-2 font-black !tracking-[0.4em] text-black">CORE_OS</span>
           </motion.div>
 
           {/* Dynamic Pings */}
           {radarSpots.map(({ spot, angle, radius }) => (
-            <div key={spot.id} onClick={() => onSelectSpot(spot)} className="preserve-3d" style={{ transform: 'translateZ(20px)' }}>
+            <div key={spot.id} onClick={() => onSelectSpot(spot)} className="preserve-3d absolute inset-0">
               <RadarPing spot={spot} angle={angle} radius={radius} />
             </div>
           ))}
 
           {/* Background Grid Lines */}
-          <div className="absolute top-1/2 left-0 w-full h-[1px] bg-cyan-400/10" />
-          <div className="absolute left-1/2 top-0 h-full w-[1px] bg-cyan-400/10" />
+          <div className="absolute top-1/2 left-0 w-full h-[1px] bg-cyan-400/20" style={{ transform: 'translateZ(-20px)' }} />
+          <div className="absolute left-1/2 top-0 h-full w-[1px] bg-cyan-400/20" style={{ transform: 'translateZ(-20px)' }} />
         </motion.div>
 
         {/* 3D Decorative Layers */}
@@ -390,27 +525,29 @@ const HomePage = ({ spots, userLocation, locationName, onSelectSpot }: { spots: 
       </section>
 
       {/* Bento Status Area */}
-      <motion.div
-        whileHover={{ scale: 1.02, rotateX: 2, rotateY: -2 }}
-        className="p-10 rounded-3xl border border-on-surface/10 mb-12 bg-surface-container shadow-[0_40px_100px_rgba(0,0,0,0.5)] relative overflow-hidden group perspective-1000"
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-        <div className="absolute -right-10 -top-10 w-64 h-64 bg-cyan-400/10 blur-[100px] rounded-full group-hover:scale-150 transition-transform duration-1000" />
+      <TiltCard className="mb-12">
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          className="p-10 rounded-3xl border border-on-surface/10 bg-surface-container shadow-[0_40px_100px_rgba(0,0,0,0.5)] relative overflow-hidden group perspective-1000"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+          <div className="absolute -right-10 -top-10 w-64 h-64 bg-cyan-400/10 blur-[100px] rounded-full group-hover:scale-150 transition-transform duration-1000" />
 
-        <div className="relative z-10 flex flex-col sm:flex-row justify-between items-end sm:items-center gap-6">
-          <div className="space-y-4">
-            <span className="label-mono !text-cyan-400 flex items-center gap-3">
-              <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_8px_cyan]" />
-              SYST_LOCATOR: ACTIVE
-            </span>
-            <h2 className="text-5xl sm:text-7xl heading-bold text-transparent bg-clip-text bg-gradient-to-r from-on-surface to-on-surface/50 leading-none">{locationName}</h2>
+          <div className="relative z-10 flex flex-col sm:flex-row justify-between items-end sm:items-center gap-6">
+            <div className="space-y-4">
+              <span className="label-mono !text-cyan-400 flex items-center gap-3">
+                <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_8px_cyan]" />
+                SYST_LOCATOR: ACTIVE
+              </span>
+              <h2 className="text-5xl sm:text-7xl heading-bold text-transparent bg-clip-text bg-gradient-to-r from-on-surface to-on-surface/50 leading-none hologram-text">{locationName}</h2>
+            </div>
+            <div className="flex flex-col items-end">
+              <span className="label-mono opacity-20 text-[8px] mb-1">LAT_LNG_STREAM</span>
+              <span className="label-mono text-[9px] font-black">{userLocation?.lat.toFixed(4) || '0.0000'} // {userLocation?.lng.toFixed(4) || '0.0000'}</span>
+            </div>
           </div>
-          <div className="flex flex-col items-end">
-            <span className="label-mono opacity-20 text-[8px] mb-1">LAT_LNG_STREAM</span>
-            <span className="label-mono text-[9px] font-black">{userLocation?.lat.toFixed(4) || '0.0000'} // {userLocation?.lng.toFixed(4) || '0.0000'}</span>
-          </div>
-        </div>
-      </motion.div>
+        </motion.div>
+      </TiltCard>
 
       {/* Enhanced Horizontal Spots */}
       <section className="mb-16">
@@ -428,40 +565,40 @@ const HomePage = ({ spots, userLocation, locationName, onSelectSpot }: { spots: 
             ))
           ) : (
             displaySpots.slice(0, 6).map((spot, idx) => (
-              <motion.div
-                key={spot.id}
-                onClick={() => onSelectSpot(spot)}
-                whileHover={{ y: -15, rotateY: 5, rotateX: 2 }}
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: idx * 0.1 }}
-                className="flex-shrink-0 w-80 snap-center rounded-2xl overflow-hidden bg-surface-container-high border border-on-surface/10 hover:border-cyan-400/30 transition-all cursor-pointer group shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
-              >
-                <div className="relative h-56 overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10 opacity-60 group-hover:opacity-40 transition-opacity" />
-                  <img src={spot.imageUrl} alt={spot.name} className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700" />
-                  <div className="absolute top-4 right-4 bg-cyan-400 text-black px-3 py-1 label-mono !font-black !text-[12px] z-20 neon-glow-cyan">
-                    {spot.rating}★
-                  </div>
-                  <div className="absolute bottom-4 left-4 z-20">
-                    <span className="label-mono !text-surface !text-[10px] bg-on-surface/20 backdrop-blur-md px-2 py-1">{spot.price}</span>
-                  </div>
-                </div>
-                <div className="p-8 space-y-6">
-                  <div>
-                    <h3 className="text-2xl heading-bold mb-1 group-hover:text-cyan-400 transition-colors uppercase truncate">{spot.name}</h3>
-                    <p className="label-mono opacity-40 text-[10px]">{spot.location}</p>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-4 border-t border-on-surface/5">
-                    <div className="flex flex-col gap-1">
-                      <span className="label-mono text-[8px] opacity-40">CROWD_LVL</span>
-                      <span className="text-xs font-bold uppercase tracking-widest text-pink-500">{spot.stats.crowd}</span>
+              <TiltCard key={spot.id} className="flex-shrink-0 w-80 snap-center">
+                <motion.div
+                  onClick={() => onSelectSpot(spot)}
+                  initial={{ opacity: 0, z: -50 }}
+                  animate={{ opacity: 1, z: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                  className="rounded-2xl overflow-hidden bg-surface-container-high border border-on-surface/10 hover:border-cyan-400/30 transition-all cursor-pointer group shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
+                >
+                  <div className="relative h-56 overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10 opacity-60 group-hover:opacity-40 transition-opacity" />
+                    <img src={spot.imageUrl} alt={spot.name} className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700" />
+                    <div className="absolute top-4 right-4 bg-cyan-400 text-black px-3 py-1 label-mono !font-black !text-[12px] z-20 neon-glow-cyan">
+                      {spot.rating}★
                     </div>
-                    <ArrowRight size={20} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all text-cyan-400" />
+                    <div className="absolute bottom-4 left-4 z-20">
+                      <span className="label-mono !text-surface !text-[10px] bg-on-surface/20 backdrop-blur-md px-2 py-1">{spot.price}</span>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
+                  <div className="p-8 space-y-6">
+                    <div>
+                      <h3 className="text-2xl heading-bold mb-1 group-hover:text-cyan-400 transition-colors uppercase truncate hologram-text">{spot.name}</h3>
+                      <p className="label-mono opacity-40 text-[10px]">{spot.location}</p>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-4 border-t border-on-surface/5">
+                      <div className="flex flex-col gap-1">
+                        <span className="label-mono text-[8px] opacity-40">CROWD_LVL</span>
+                        <span className="text-xs font-bold uppercase tracking-widest text-pink-500">{spot.stats.crowd}</span>
+                      </div>
+                      <ArrowRight size={20} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all text-cyan-400" />
+                    </div>
+                  </div>
+                </motion.div>
+              </TiltCard>
             ))
           )}
         </div>
@@ -470,6 +607,7 @@ const HomePage = ({ spots, userLocation, locationName, onSelectSpot }: { spots: 
       {/* Neon AI CTA */}
       <motion.section
         whileHover={{ scale: 0.98 }}
+        onClick={onNavigateToAI}
         className="p-12 rounded-3xl border-2 border-cyan-400/30 bg-on-surface text-surface relative overflow-hidden group cursor-pointer shadow-[0_0_80px_rgba(34,211,238,0.2)]"
       >
         <div className="absolute -right-20 -top-20 w-80 h-80 bg-cyan-400/20 rounded-full blur-[100px] group-hover:scale-125 transition-transform duration-1000" />
@@ -484,7 +622,10 @@ const HomePage = ({ spots, userLocation, locationName, onSelectSpot }: { spots: 
             </div>
           </div>
 
-          <button className="flex items-center gap-4 px-8 py-5 bg-surface text-on-surface rounded-full font-black uppercase tracking-[0.2em] text-xs hover:bg-cyan-400 hover:text-black transition-all group-hover:shadow-[0_0_30px_rgba(34,211,238,0.5)]">
+          <button 
+            onClick={onNavigateToAI}
+            className="flex items-center gap-4 px-8 py-5 bg-surface text-on-surface rounded-full font-black uppercase tracking-[0.2em] text-xs hover:bg-cyan-400 hover:text-black transition-all group-hover:shadow-[0_0_30px_rgba(34,211,238,0.5)] active:scale-95"
+          >
             Akses_Pencari <ArrowRight size={22} className="group-hover:translate-x-2 transition-transform" />
           </button>
         </div>
@@ -605,50 +746,51 @@ const AIFinderPage = ({ spots, userLocation, locationName, onSelectSpot }: { spo
 
       <div className="grid grid-cols-1 gap-10">
         {(results.length > 0 ? results : spots.slice(1, 3)).map((spot, idx) => (
-          <motion.div
-            key={spot.id}
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.1 }}
-            onClick={() => onSelectSpot(spot)}
-            className="group relative bg-surface-container rounded-3xl overflow-hidden border border-on-surface/5 hover:border-cyan-400/30 transition-all cursor-pointer shadow-xl hover:shadow-[0_40px_80px_rgba(0,0,0,0.6)]"
-          >
-            <div className="flex flex-col md:flex-row gap-8 p-10">
-              <div className="w-full md:w-80 aspect-[16/10] sm:aspect-auto sm:h-56 relative rounded-2xl overflow-hidden flex-shrink-0">
-                <img src={spot.imageUrl} alt={spot.name} className="w-full h-full object-cover grayscale brightness-75 group-hover:grayscale-0 group-hover:brightness-100 group-hover:scale-105 transition-all duration-700" />
-                <div className="absolute top-4 left-4 bg-on-surface/40 backdrop-blur-md text-surface px-4 py-1.5 label-mono !text-[10px] !font-black skew-x-[-12deg]">
-                  {spot.vibe}
-                </div>
-              </div>
-              <div className="flex-1 flex flex-col justify-between py-2">
-                <div className="space-y-4">
-                  <div className="flex justify-between items-start">
-                    <h3 className="text-4xl heading-bold uppercase leading-[0.8] tracking-tighter group-hover:text-cyan-400 transition-colors">{spot.name}</h3>
-                    <div className="text-3xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-pink-500">#{spot.rating}</div>
+          <TiltCard key={spot.id}>
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.1 }}
+              onClick={() => onSelectSpot(spot)}
+              className="group relative bg-surface-container rounded-3xl overflow-hidden border border-on-surface/5 hover:border-cyan-400/30 transition-all cursor-pointer shadow-xl hover:shadow-[0_40px_80px_rgba(0,0,0,0.6)]"
+            >
+              <div className="flex flex-col md:flex-row gap-8 p-10">
+                <div className="w-full md:w-80 aspect-[16/10] sm:aspect-auto sm:h-56 relative rounded-2xl overflow-hidden flex-shrink-0">
+                  <img src={spot.imageUrl} alt={spot.name} className="w-full h-full object-cover grayscale brightness-75 group-hover:grayscale-0 group-hover:brightness-100 group-hover:scale-105 transition-all duration-700" />
+                  <div className="absolute top-4 left-4 bg-on-surface/40 backdrop-blur-md text-surface px-4 py-1.5 label-mono !text-[10px] !font-black skew-x-[-12deg]">
+                    {spot.vibe}
                   </div>
-                  <p className="text-sm label-mono opacity-40 uppercase tracking-widest">{spot.location} // CLS_FREQ: {spot.reviews}</p>
                 </div>
+                <div className="flex-1 flex flex-col justify-between py-2">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-start">
+                      <h3 className="text-4xl heading-bold uppercase leading-[0.8] tracking-tighter group-hover:text-cyan-400 transition-colors hologram-text">{spot.name}</h3>
+                      <div className="text-3xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-pink-500">#{spot.rating}</div>
+                    </div>
+                    <p className="text-sm label-mono opacity-40 uppercase tracking-widest">{spot.location} // CLS_FREQ: {spot.reviews}</p>
+                  </div>
 
-                <div className="flex items-center gap-8 pt-8 border-t border-on-surface/5">
-                  <div className="space-y-1">
-                    <span className="label-mono text-[8px] opacity-20">INFRA_STATUS</span>
-                    <div className="flex items-center gap-2">
-                      <Wifi size={14} className="text-cyan-400" />
-                      <span className="label-mono text-[9px]">ULTRA_NET</span>
+                  <div className="flex items-center gap-8 pt-8 border-t border-on-surface/5">
+                    <div className="space-y-1">
+                      <span className="label-mono text-[8px] opacity-20">INFRA_STATUS</span>
+                      <div className="flex items-center gap-2">
+                        <Wifi size={14} className="text-cyan-400" />
+                        <span className="label-mono text-[9px]">ULTRA_NET</span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="label-mono text-[8px] opacity-20">CROWD_LVL</span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-pink-500 animate-pulse" />
-                      <span className="label-mono text-[9px] text-pink-500">{spot.stats.crowd}</span>
+                    <div className="space-y-1">
+                      <span className="label-mono text-[8px] opacity-20">CROWD_LVL</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-pink-500 animate-pulse" />
+                        <span className="label-mono text-[9px] text-pink-500">{spot.stats.crowd}</span>
+                      </div>
                     </div>
+                    <ArrowRight size={24} className="ml-auto opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all text-cyan-400" />
                   </div>
-                  <ArrowRight size={24} className="ml-auto opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all text-cyan-400" />
                 </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </TiltCard>
         ))}
       </div>
     </motion.div>
@@ -823,6 +965,10 @@ const RouteView = ({ from, to }: { from: { lat: number, lng: number }, to: { lat
 const DetailPage = ({ spot, userLocation, onUpdateSpot, onBack, onShare }: { spot: Spot, userLocation: { lat: number, lng: number } | null, onUpdateSpot: (s: Spot) => void, onBack: () => void, onShare: () => void }) => {
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [extractedMenu, setExtractedMenu] = useState<{ name: string, price: number }[]>([]);
+  const [insights, setInsights] = useState<{ sellingPoints: string[], weaknesses: string[] }>({
+    sellingPoints: ['Menu Lokal Autentik', 'Suasana Tenang'],
+    weaknesses: ['Area Parkir Terbatas', 'Sinyal Provider Lemah']
+  });
   const [loadingMenu, setLoadingMenu] = useState(false);
 
   useEffect(() => {
@@ -835,10 +981,17 @@ const DetailPage = ({ spot, userLocation, onUpdateSpot, onBack, onShare }: { spo
       setLoadingMenu(true);
       try {
         const reviewText = spot.googleReviews.map(r => r.text).join('\n---\n');
-        const prompt = `Following are Google Maps reviews for a cafe named "${spot.name}" in "${spot.location}". 
-        Extract 4-5 typical menu items and their prices in IDR (Rupiah) mentioned in these reviews. 
-        If specific prices are NOT mentioned, estimate them based on the cafe's price level (${spot.price}) where $ is cheap (15k-30k), $$ is mid (30k-60k), and $$$ is premium (60k+).
-        Return ONLY a JSON array of objects with "name" and "price" (number) keys.
+        const prompt = `Following are Google Maps reviews for a place named "${spot.name}" in "${spot.location}". 
+        1. Extract 4-5 typical menu items and their estimated prices in IDR.
+        2. Identify what this place is famous for / what they sell primarily (Selling Points).
+        3. Identify the main weaknesses or common complaints (Weaknesses).
+        
+        Return ONLY a JSON object with:
+        {
+          "menu": [{"name": string, "price": number}],
+          "sellingPoints": [string],
+          "weaknesses": [string]
+        }
         
         Reviews:
         ${reviewText.substring(0, 3000)}`;
@@ -850,12 +1003,16 @@ const DetailPage = ({ spot, userLocation, onUpdateSpot, onBack, onShare }: { spo
 
         const text = response.text.replace(/```json|```/g, '').trim();
         const parsed = JSON.parse(text);
-        if (Array.isArray(parsed)) {
-          setExtractedMenu(parsed.slice(0, 6));
+        
+        if (parsed.menu) setExtractedMenu(parsed.menu.slice(0, 6));
+        if (parsed.sellingPoints || parsed.weaknesses) {
+          setInsights({
+            sellingPoints: parsed.sellingPoints || [],
+            weaknesses: parsed.weaknesses || []
+          });
         }
       } catch (err) {
-        console.error("MENU_EXTRACTION_FAILED", err);
-        setExtractedMenu([]); // Ensure fallback triggers
+        console.error("AI_INSIGHTS_FAILED", err);
       } finally {
         setLoadingMenu(false);
       }
@@ -922,25 +1079,24 @@ const DetailPage = ({ spot, userLocation, onUpdateSpot, onBack, onShare }: { spo
       <main className="p-4 sm:p-12 max-w-6xl mx-auto flex flex-col lg:flex-row gap-16">
         <section className="flex-1 space-y-16">
           {/* 3D Photo Slider */}
-          <div className="perspective-1000">
+          <TiltCard className="perspective-2000">
             <motion.div
-              whileHover={{ rotateY: 5, rotateX: 2 }}
-              className="relative aspect-[16/9] group overflow-hidden rounded-3xl border border-on-surface/10 bg-surface-container shadow-[0_50px_100px_rgba(0,0,0,0.4)] preserve-3d"
+              className="relative aspect-[16/9] group overflow-hidden rounded-3xl border border-on-surface/10 bg-surface-container shadow-[0_50px_100px_rgba(0,0,0,0.6)] preserve-3d"
             >
               <AnimatePresence mode="wait">
                 <motion.img
                   key={currentPhotoIndex}
                   src={spot.imageUrls[currentPhotoIndex]}
                   alt={`${spot.name} - ${currentPhotoIndex + 1}`}
-                  initial={{ opacity: 0, scale: 1.2, rotate: 2 }}
-                  animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                  exit={{ opacity: 0, scale: 0.8, rotate: -2 }}
+                  initial={{ opacity: 0, scale: 1.2, rotateY: 20 }}
+                  animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+                  exit={{ opacity: 0, scale: 0.8, rotateY: -20 }}
                   transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                   className="w-full h-full object-cover grayscale brightness-90 transition-all duration-700 group-hover:grayscale-0 group-hover:brightness-100"
                 />
               </AnimatePresence>
 
-              <div className="absolute top-6 right-6 bg-cyan-400 text-black px-6 py-2 label-mono !font-black !text-[14px] z-10 neon-glow-cyan">
+              <div className="absolute top-6 right-6 bg-cyan-400 text-black px-6 py-2 label-mono !font-black !text-[14px] z-10 neon-glow-cyan shadow-[0_0_20px_rgba(34,211,238,0.5)]">
                 PIC_{String(currentPhotoIndex + 1).padStart(2, '0')}
               </div>
 
@@ -971,7 +1127,7 @@ const DetailPage = ({ spot, userLocation, onUpdateSpot, onBack, onShare }: { spo
                 ))}
               </div>
             </motion.div>
-          </div>
+          </TiltCard>
 
           <div className="space-y-8">
             <div className="flex items-center gap-4">
@@ -1064,11 +1220,22 @@ const DetailPage = ({ spot, userLocation, onUpdateSpot, onBack, onShare }: { spo
                   <span className="label-mono !text-surface/60 pb-2">KONDISI_{spot.stats.crowd.toUpperCase()}</span>
                 </div>
               </div>
-              <div className="p-8 border border-on-surface/10 bg-surface-container">
-                <span className="label-mono opacity-40 block mb-6">KECEPATAN_INTERNET</span>
-                <div className="flex items-end gap-3">
-                  <span className="text-4xl font-black italic tracking-tighter">{spot.stats.wifi}</span>
-                  <span className="label-mono opacity-40 pb-1">SINKRONISASI_AKTIF</span>
+              <div className="p-8 border border-on-surface/10 bg-surface-container space-y-6">
+                <div>
+                  <span className="label-mono text-cyan-400 block mb-4">FOCUS_AREA // PRODUK_UTAMA</span>
+                  <div className="flex flex-wrap gap-2">
+                    {insights.sellingPoints.map((item, i) => (
+                      <span key={i} className="label-mono !text-[10px] bg-cyan-400/10 text-cyan-400 px-3 py-1 border border-cyan-400/20">{item.toUpperCase()}</span>
+                    ))}
+                  </div>
+                </div>
+                <div className="pt-4 border-t border-on-surface/5">
+                  <span className="label-mono text-pink-500 block mb-4">SYSTEM_WARNING // KELEMAHAN</span>
+                  <div className="flex flex-wrap gap-2">
+                    {insights.weaknesses.map((item, i) => (
+                      <span key={i} className="label-mono !text-[10px] bg-pink-500/10 text-pink-500 px-3 py-1 border border-pink-500/20">{item.toUpperCase()}</span>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1320,24 +1487,30 @@ const SpotsPage = ({ spots, userLocation, onSelectSpot }: { spots: Spot[], userL
               </div>
               <div className="flex gap-8 overflow-x-auto pb-10 scrollbar-hide snap-x perspective-1000">
                 {recommendations.map((s, idx) => (
-                  <motion.div
-                    key={`rec-${s.id}`}
-                    whileHover={{ scale: 1.05, rotateY: 5, y: -10 }}
-                    onClick={() => onSelectSpot(s)}
-                    className="flex-shrink-0 w-72 snap-center rounded-3xl overflow-hidden bg-surface-container border border-on-surface/10 hover:border-cyan-400 group cursor-pointer transition-all shadow-[0_20px_50px_rgba(0,0,0,0.3)]"
-                  >
-                    <div className="relative aspect-[16/10]">
-                      <img src={s.imageUrl} className="w-full h-full object-cover grayscale brightness-75 group-hover:grayscale-0 group-hover:brightness-100 transition-all duration-700" />
-                      <div className="absolute top-4 right-4 bg-cyan-400 text-black px-3 py-1 label-mono !font-black !text-[10px] neon-glow-cyan">#{s.rating}</div>
-                    </div>
-                    <div className="p-6 space-y-4">
-                      <h3 className="text-xl heading-bold uppercase truncate">{s.name}</h3>
-                      <div className="flex justify-between items-center text-[8px] label-mono opacity-40">
-                        <span>{s.location}</span>
-                        <span className="text-pink-500">{s.price}</span>
+                  <TiltCard key={s.id} className="flex-shrink-0 w-80 snap-center">
+                    <motion.div
+                      onClick={() => onSelectSpot(s)}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: idx * 0.1 }}
+                      className="rounded-2xl overflow-hidden bg-surface-container border border-on-surface/5 hover:border-cyan-400/30 transition-all cursor-pointer group"
+                    >
+                      <div className="relative h-44">
+                        <img src={s.imageUrl} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" />
+                        <div className="absolute top-4 right-4 bg-cyan-400 text-black px-2 py-1 label-mono !text-[10px] !font-black">
+                          {s.rating}★
+                        </div>
                       </div>
-                    </div>
-                  </motion.div>
+                      <div className="p-6">
+                        <h4 className="heading-bold text-lg mb-1 truncate hologram-text">{s.name}</h4>
+                        <p className="label-mono opacity-40 text-[9px] mb-4">{s.location}</p>
+                        <div className="flex justify-between items-center">
+                          <span className="label-mono !text-pink-500">{s.price}</span>
+                          <ArrowRight size={16} className="text-cyan-400 translate-x-[-10px] opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all" />
+                        </div>
+                      </div>
+                    </motion.div>
+                  </TiltCard>
                 ))}
               </div>
             </section>
@@ -1350,32 +1523,33 @@ const SpotsPage = ({ spots, userLocation, onSelectSpot }: { spots: Spot[], userL
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               {spots.map((s, idx) => (
-                <motion.div
-                  key={s.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: idx * 0.05 }}
-                  onClick={() => onSelectSpot(s)}
-                  className="group relative bg-surface-container rounded-3xl p-8 flex gap-8 cursor-pointer hover:border-cyan-400/50 border border-on-surface/5 transition-all shadow-xl hover:shadow-[0_30px_60px_rgba(0,0,0,0.5)] overflow-hidden"
-                >
-                  <div className="absolute -right-32 -bottom-32 w-64 h-64 bg-cyan-400/5 rounded-full blur-[80px] group-hover:bg-cyan-400/10 transition-all" />
-                  <div className="w-32 h-32 flex-shrink-0 bg-surface rounded-2xl overflow-hidden border border-on-surface/5">
-                    <img src={s.imageUrl} className="w-full h-full object-cover grayscale brightness-90 group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700" />
-                  </div>
-                  <div className="flex-1 flex flex-col justify-between">
-                    <div>
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="heading-bold text-3xl leading-[0.8] uppercase">{s.name}</h3>
-                        <span className="text-xl font-black italic text-cyan-400">#{s.rating}</span>
+                <TiltCard key={s.id}>
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: idx * 0.05 }}
+                    onClick={() => onSelectSpot(s)}
+                    className="group relative bg-surface-container rounded-3xl p-8 flex gap-8 cursor-pointer hover:border-cyan-400/50 border border-on-surface/5 transition-all shadow-xl hover:shadow-[0_30px_60px_rgba(0,0,0,0.5)] overflow-hidden"
+                  >
+                    <div className="absolute -right-32 -bottom-32 w-64 h-64 bg-cyan-400/5 rounded-full blur-[80px] group-hover:bg-cyan-400/10 transition-all" />
+                    <div className="w-32 h-32 flex-shrink-0 bg-surface rounded-2xl overflow-hidden border border-on-surface/5">
+                      <img src={s.imageUrl} className="w-full h-full object-cover grayscale brightness-90 group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700" />
+                    </div>
+                    <div className="flex-1 flex flex-col justify-between">
+                      <div>
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="heading-bold text-3xl leading-[0.8] uppercase hologram-text">{s.name}</h3>
+                          <span className="text-xl font-black italic text-cyan-400">#{s.rating}</span>
+                        </div>
+                        <p className="label-mono opacity-40 text-[9px] mb-4">{s.location} // {s.distance}</p>
                       </div>
-                      <p className="label-mono opacity-40 text-[9px] mb-4">{s.location} // {s.distance}</p>
+                      <div className="flex items-center justify-between border-t border-on-surface/5 pt-4">
+                        <span className="label-mono !text-[8px] bg-on-surface/5 px-2 py-1">{s.price}</span>
+                        <ArrowRight size={18} className="opacity-0 translate-x-[-10px] group-hover:opacity-100 group-hover:translate-x-0 transition-all text-cyan-400" />
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between border-t border-on-surface/5 pt-4">
-                      <span className="label-mono !text-[8px] bg-on-surface/5 px-2 py-1">{s.price}</span>
-                      <ArrowRight size={18} className="opacity-0 translate-x-[-10px] group-hover:opacity-100 group-hover:translate-x-0 transition-all text-cyan-400" />
-                    </div>
-                  </div>
-                </motion.div>
+                  </motion.div>
+                </TiltCard>
               ))}
             </div>
           </motion.div>
@@ -1443,7 +1617,10 @@ export default function App() {
   }, [selectedSpot, currentPage]);
 
   useEffect(() => {
-    if (!("geolocation" in navigator)) return;
+    if (!("geolocation" in navigator)) {
+      setLocationName('GEO_NOT_SUPPORTED');
+      return;
+    }
 
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
@@ -1453,33 +1630,51 @@ export default function App() {
         };
         setUserLocation(coords);
 
-        // Reverse geocoding for UI display
-        fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${coords.lat},${coords.lng}&key=${MAP_KEY}`)
-          .then(res => res.json())
-          .then(data => {
-            if (data.results && data.results.length > 0) {
-              const cityComponent = data.results[0].address_components.find(
-                (c: any) => c.types.includes('locality') || c.types.includes('administrative_area_level_2')
-              );
-              const city = cityComponent?.long_name || 'TITIK_AKTIF';
-              setLocationName(`${city.toUpperCase()}.OS`);
+        // Use Google Maps Geocoder instead of fetch to avoid CORS
+        if ((window as any).google && (window as any).google.maps) {
+          const geocoder = new (window as any).google.maps.Geocoder();
+          geocoder.geocode({ location: coords }, (results: any, status: any) => {
+            if (status === 'OK' && results[0]) {
+              const comps = results[0].address_components;
+              const cityComp = comps.find((c: any) => c.types.includes('locality')) || 
+                               comps.find((c: any) => c.types.includes('administrative_area_level_2'));
+              
+              const cityName = cityComp ? cityComp.long_name.toUpperCase()
+                .replace('KABUPATEN ', '')
+                .replace('KOTA ', '') : 'GRID_AKTIF';
+                
+              setLocationName(cityName + '.OS');
             } else {
               setLocationName('GRID_AKTIF.OS');
             }
-          })
-          .catch(() => setLocationName('GRID_LOCATED'));
-      },
-      (error) => {
-        console.warn("Geolocation access denied", error);
-        if (error.code === 1) {
-          setLocationName('IZIN_DITOLAK');
+          });
+        } else {
+          // Fallback if google maps not loaded yet
+          setLocationName(`LAT_${coords.lat.toFixed(2)}_LNG_${coords.lng.toFixed(2)}`);
         }
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      (error) => {
+        console.error("GPS_SYNC_FAILURE", error);
+        if (!userLocation) {
+          setLocationName('SIGNAL_LOST.OS');
+        }
+      },
+      { 
+        enableHighAccuracy: true, 
+        maximumAge: 10000, 
+        timeout: 10000 
+      }
     );
 
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
+
+  // Force update location name if geocoding is stuck but we have coordinates
+  useEffect(() => {
+    if (userLocation && locationName === 'MENYINGKRONKAN...') {
+      setLocationName(`LAT_${userLocation.lat.toFixed(2)}_LNG_${userLocation.lng.toFixed(2)}`);
+    }
+  }, [userLocation, locationName]);
 
   const handleUpdateSpot = (updatedSpot: Spot) => {
     setSpots(prev => prev.map(s => s.id === updatedSpot.id ? updatedSpot : s));
@@ -1518,85 +1713,84 @@ export default function App() {
 
   return (
     <APIProvider apiKey={MAP_KEY || 'MISSING_KEY'} version="weekly">
+      <Scene3D />
+      
       {/* Share Status Notification */}
       <AnimatePresence>
         {shareStatus && (
           <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            className="fixed bottom-24 sm:bottom-12 left-1/2 -translate-x-1/2 z-[100] bg-on-surface text-surface px-8 py-3 label-mono font-black italic shadow-2xl skew-x-[-12deg]"
+            initial={{ opacity: 0, y: 50, rotateX: 45 }}
+            animate={{ opacity: 1, y: 0, rotateX: 0 }}
+            exit={{ opacity: 0, y: 50, rotateX: 45 }}
+            className="fixed bottom-24 sm:bottom-12 left-1/2 -translate-x-1/2 z-[100] bg-cyan-400 text-black px-8 py-3 label-mono font-black italic shadow-[0_20px_50px_rgba(34,211,238,0.4)] skew-x-[-12deg]"
           >
             {shareStatus === 'LINK_DISALIN' ? '📋 LINK_DISALIN' : '✅ BERHASIL_DIBAGIKAN'}
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="min-h-screen bg-surface font-sans text-on-surface select-none">
+      <div className="min-h-screen bg-transparent font-sans text-on-surface select-none perspective-2000">
         {!userLocation && (
           <div className="fixed inset-0 z-[100] bg-surface flex flex-col items-center justify-center space-y-8">
             <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-              className="w-20 h-20 border-t-2 border-cyan-400 rounded-full shadow-[0_0_20px_rgba(34,211,238,0.5)]"
+              animate={{ 
+                rotateY: 360,
+                translateZ: [0, 100, 0]
+              }}
+              transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+              className="w-24 h-24 border-t-4 border-cyan-400 rounded-full shadow-[0_0_50px_rgba(34,211,238,0.5)] preserve-3d"
             />
             <div className="text-center space-y-2">
-              <h1 className="heading-bold text-2xl tracking-[0.3em]">MENCARI_SINYAL_GPS</h1>
+              <h1 className="heading-bold text-3xl tracking-[0.4em] hologram-text">MENCARI_SANYAL_GPS</h1>
               <p className="label-mono opacity-40">HARAP_BERIKAN_IZIN_LOKASI_UNTUK_SINKRONISASI_GRID</p>
             </div>
           </div>
         )}
 
-        {currentPage !== 'detail' && <TopAppBar />}
+        {currentPage !== 'detail' && <TopAppBar onNavigateToAI={() => setCurrentPage('ai-finder')} />}
 
-        <main className="relative">
+        <main className="relative z-10">
           <AnimatePresence mode="wait">
-            {currentPage === 'radar' && <HomePage spots={spots} userLocation={userLocation} locationName={locationName} onSelectSpot={handleSelectSpot} />}
-            {currentPage === 'spots' && (
-              <SpotsPage spots={spots} userLocation={userLocation} onSelectSpot={handleSelectSpot} />
-            )}
-            {currentPage === 'ai-finder' && <AIFinderPage spots={spots} userLocation={userLocation} locationName={locationName} onSelectSpot={handleSelectSpot} />}
-            {currentPage === 'detail' && selectedSpot && (
-              <DetailPage
-                spot={spots.find(s => s.id === selectedSpot.id) || selectedSpot}
-                userLocation={userLocation}
-                onUpdateSpot={handleUpdateSpot}
-                onBack={() => {
-                  setSelectedSpot(null);
-                  setCurrentPage('radar');
-                }}
-                onShare={handleShare}
-              />
-            )}
+            <motion.div
+              key={currentPage}
+              initial={{ opacity: 0, rotateY: 10, translateZ: -100 }}
+              animate={{ opacity: 1, rotateY: 0, translateZ: 0 }}
+              exit={{ opacity: 0, rotateY: -10, translateZ: -100 }}
+              transition={{ type: "spring", damping: 20, stiffness: 100 }}
+            >
+              {currentPage === 'radar' && (
+                <HomePage 
+                  spots={spots} 
+                  userLocation={userLocation} 
+                  locationName={locationName} 
+                  setLocationName={setLocationName}
+                  onSelectSpot={handleSelectSpot} 
+                  onNavigateToAI={() => setCurrentPage('ai-finder')} 
+                />
+              )}
+              {currentPage === 'spots' && (
+                <SpotsPage spots={spots} userLocation={userLocation} onSelectSpot={handleSelectSpot} />
+              )}
+              {currentPage === 'ai-finder' && <AIFinderPage spots={spots} userLocation={userLocation} locationName={locationName} onSelectSpot={handleSelectSpot} />}
+              {currentPage === 'detail' && selectedSpot && (
+                <DetailPage
+                  spot={spots.find(s => s.id === selectedSpot.id) || selectedSpot}
+                  userLocation={userLocation}
+                  onUpdateSpot={handleUpdateSpot}
+                  onBack={() => {
+                    setSelectedSpot(null);
+                    setCurrentPage('radar');
+                  }}
+                  onShare={handleShare}
+                />
+              )}
+            </motion.div>
           </AnimatePresence>
         </main>
-
-        <AnimatePresence>
-          {shareStatus && (
-            <motion.div
-              initial={{ y: 100, opacity: 0, x: '-50%' }}
-              animate={{ y: 0, opacity: 1, x: '-50%' }}
-              exit={{ y: 100, opacity: 0, x: '-50%' }}
-              className="fixed bottom-24 left-1/2 z-[100] bg-on-surface text-surface px-6 py-3 label-mono !text-[10px] font-black border border-surface/20 shadow-2xl skew-x-[-10deg]"
-            >
-              {shareStatus}
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {currentPage !== 'detail' && (
           <BottomNavBar activePage={currentPage} setActivePage={setCurrentPage} />
         )}
-
-        {/* Global Background Map Overlay Effect */}
-        <div className="fixed inset-0 -z-10 opacity-10 pointer-events-none select-none">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_0%,_#161311_80%)]" />
-          <img
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAtxHT47w-lOX2vQROpZ2gAzvMGUFw6-P2PcpcRfsi8X19mG8SczTCLWTpTJ8ptVKxpgsbf5bCzC-CUsZkcccwM1Z0l7w2M6qUpE_fJ8u865i1Bik428p57URHQHaNwhXpfxXp7Qr5a81aKTmKcGBfMr-0Rjw8ZvuIH_KynF1v54GxCCX-AoHpGjjuGcPi_0h12qeEWGvZMfB2yP08VNAIM6A7nAC2anKxI15e89QqII7WyiBMBnWiqDmsRkAxmgbzJsJwOtpzxA_Z8"
-            className="w-full h-full object-cover grayscale brightness-50"
-            alt="Background Map"
-          />
-        </div>
       </div>
     </APIProvider>
   );

@@ -76,6 +76,35 @@
   .ai-gradient {
     @apply bg-gradient-to-r from-[#D1EAF9] to-[#E8F4FC];
   }
+
+  .text-3d-logo {
+    background: linear-gradient(135deg, #1BA0E2 0%, #10B981 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    filter: drop-shadow(1px 1px 0px #0D4A6E) 
+            drop-shadow(2px 2px 0px #0D4A6E) 
+            drop-shadow(3px 3px 0px #08304a)
+            drop-shadow(4px 4px 4px rgba(0,0,0,0.25));
+    font-weight: 900;
+    font-family: var(--font-sans);
+  }
+
+  .btn-3d {
+    @apply bg-white rounded-full flex items-center justify-center transition-all duration-150;
+    border: 1px solid #E5E7EB;
+    box-shadow: 
+      0 4px 0 #D1D5DB,
+      0 6px 15px rgba(0,0,0,0.08);
+  }
+  
+  .btn-3d:active {
+    transform: translateY(3px);
+    box-shadow: 
+      0 1px 0 #D1D5DB,
+      0 2px 5px rgba(0,0,0,0.08);
+  }
 }
 
 .scrollbar-hide::-webkit-scrollbar {

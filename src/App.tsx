@@ -112,7 +112,7 @@ const MOCK_SPOTS: Spot[] = [
 async function analyzeSentiment(text: string): Promise<'POSITIVE' | 'NEGATIVE' | 'NEUTRAL'> {
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       contents: `Analyze the sentiment of this coffee shop review. Return ONLY one of these three words: POSITIVE, NEGATIVE, or NEUTRAL.
 
   Review: "${text}"`
@@ -176,10 +176,8 @@ const TopAppBar = ({ onNavigateToAI }: { onNavigateToAI: () => void }) => (
   <header className="fixed top-0 left-0 w-full z-[60] glass-header h-16">
     <div className="flex justify-between items-center max-w-5xl mx-auto px-6 h-full text-on-surface">
       <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-[#0E84C3] flex items-center justify-center shadow-md">
-          <MapPin size={18} className="text-white" />
-        </div>
-        <span className="heading-bold text-xl text-primary tracking-tight">NongkrongYuk</span>
+        <img src="/Logo Vibe.png" alt="Logo Vibe" className="w-8 h-8 rounded-xl shadow-md object-contain" />
+        <span className="text-xl tracking-tight text-3d-logo">NongkrongYuk</span>
       </div>
       <div className="flex items-center gap-4">
         <button 
@@ -883,7 +881,7 @@ const DetailPage = ({ spot, userLocation, onUpdateSpot, onBack, onShare, isSaved
         ${reviewText.substring(0, 3000)}`;
 
         const response = await ai.models.generateContent({
-          model: "gemini-1.5-flash-latest",
+          model: "gemini-2.5-flash",
           contents: prompt
         });
 
@@ -930,15 +928,15 @@ const DetailPage = ({ spot, userLocation, onUpdateSpot, onBack, onShare, isSaved
       exit={{ opacity: 0, x: -50 }}
       className="bg-surface min-h-screen pb-32 overflow-x-hidden"
     >
-      <header className="fixed top-0 left-0 w-full z-[70] glass-header px-4 h-16 flex items-center justify-between">
-        <button onClick={onBack} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-dim transition-colors text-on-surface">
+      <header className="fixed top-0 left-0 w-full z-[70] glass-header px-4 h-20 flex items-center justify-between pb-2">
+        <button onClick={onBack} className="w-10 h-10 btn-3d text-on-surface">
           <ChevronLeft size={24} />
         </button>
         <span className="font-bold text-on-surface truncate px-4">{spot.name}</span>
-        <div className="flex items-center gap-1">
-          <button onClick={onShare} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-dim transition-colors"><Share2 size={20} className="text-on-surface" /></button>
-          <button onClick={() => onToggleSave(spot)} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-dim transition-colors">
-            <Bookmark size={20} className={`transition-colors ${isSaved ? 'text-primary fill-primary' : 'text-on-surface'}`} />
+        <div className="flex items-center gap-3">
+          <button onClick={onShare} className="w-10 h-10 btn-3d"><Share2 size={18} className="text-on-surface" /></button>
+          <button onClick={() => onToggleSave(spot)} className="w-10 h-10 btn-3d">
+            <Bookmark size={18} className={`transition-colors ${isSaved ? 'text-primary fill-primary' : 'text-on-surface'}`} />
           </button>
         </div>
       </header>
@@ -1449,8 +1447,9 @@ export default function App() {
     }
 
     const resolveLocationName = async (lat: number, lng: number) => {
-      // 1. Try Google Maps Geocoder if available
-      if ((window as any).google && (window as any).google.maps) {
+      // 1. (Dinonaktifkan agar tidak muncul error merah di console) Try Google Maps Geocoder
+      /*
+      if ((window as any).google && (window as any).google.maps && (window as any).google.maps.Geocoder) {
         const geocoder = new (window as any).google.maps.Geocoder();
         try {
           const response = await new Promise<any>((resolve, reject) => {
@@ -1477,6 +1476,7 @@ export default function App() {
           console.warn('Google Maps Geocoding failed, trying fallback...', e);
         }
       }
+      */
 
       // 2. Fallback to OpenStreetMap Nominatim
       try {

@@ -660,133 +660,92 @@ const AIFinderPage = ({ spots, userLocation, locationName, onSelectSpot }: { spo
   );
 };
 
-const ReviewSection = ({ spot, onAddReview }: { spot: Spot, onAddReview: (r: Review) => void }) => {
-  const [comment, setComment] = useState('');
-  const [rating, setRating] = useState(5);
-  const [submitting, setSubmitting] = useState(false);
+const ReviewSection = ({ spot }: { spot: Spot }) => {
+  const [analyzedReviews, setAnalyzedReviews] = useState<{ text: string, sentiment: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL' }[]>([]);
+  const [loadingSentiment, setLoadingSentiment] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!comment.trim()) return;
+  useEffect(() => {
+    const processReviews = async () => {
+      if (!spot.googleReviews || spot.googleReviews.length === 0) return;
 
-    setSubmitting(true);
-    const sentiment = await analyzeSentiment(comment);
-
-    const newReview: Review = {
-      id: Math.random().toString(36).substr(2, 9),
-      user: 'USR_' + Math.random().toString(36).substr(2, 4).toUpperCase(),
-      rating,
-      comment,
-      sentiment,
-      date: new Date().toISOString().split('T')[0]
+      setLoadingSentiment(true);
+      try {
+        const processed = await Promise.all(spot.googleReviews.slice(0, 4).map(async (r) => {
+          const sentiment = await analyzeSentiment(r.text);
+          return { text: r.text, sentiment };
+        }));
+        setAnalyzedReviews(processed);
+      } catch (err) {
+        console.error("Failed to analyze sentiment", err);
+        setAnalyzedReviews(spot.googleReviews.slice(0, 4).map(r => ({ text: r.text, sentiment: 'NEUTRAL' })));
+      } finally {
+        setLoadingSentiment(false);
+      }
     };
 
-    onAddReview(newReview);
-    setComment('');
-    setRating(5);
-    setSubmitting(false);
-  };
+    processReviews();
+  }, [spot.id]);
+
+  if (!spot.googleReviews || spot.googleReviews.length === 0) {
+    return (
+      <section className="pt-8 mt-8 border-t border-outline-variant">
+        <h3 className="text-xl font-bold text-on-surface mb-4">Ulasan Pengunjung</h3>
+        <div className="bg-surface-bright p-8 rounded-2xl border border-outline-variant text-center">
+          <p className="text-sm text-on-surface-variant">Belum ada ulasan untuk tempat ini.</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
-    <section className="space-y-16 pt-16 border-t border-on-surface/5">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
-        <div>
-          <span className="label-mono !text-cyan-400 block mb-2">TELEMETRI_UMPAN_BALIK</span>
-          <h3 className="text-5xl heading-bold uppercase">Log_Protokol</h3>
-        </div>
-        <div className="flex items-center gap-4 bg-surface-container px-6 py-3 rounded-full border border-on-surface/5">
-          <div className="flex gap-1">
-            {[1, 2, 3, 4, 5].map(i => <Star key={i} size={14} className={i <= Math.round(spot.rating) ? 'text-yellow-400 fill-yellow-400' : 'text-on-surface/10'} />)}
-          </div>
-          <span className="text-2xl font-black italic">{spot.rating}</span>
+    <section className="pt-8 mt-8 border-t border-outline-variant">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-xl font-bold text-on-surface">Ulasan Pengunjung</h3>
+        <div className="flex items-center gap-2 bg-yellow-50 text-yellow-700 px-3 py-1 rounded-lg">
+          <Star size={16} className="fill-current" />
+          <span className="font-bold">{spot.rating}</span>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="relative group">
-        <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400/20 to-pink-500/20 rounded-3xl blur-md opacity-20 group-hover:opacity-40 transition-all" />
-        <div className="relative space-y-12 bg-surface-container rounded-3xl p-8 sm:p-12 border border-on-surface/5 shadow-2xl">
-          <div className="space-y-6">
-            <span className="label-mono opacity-40 flex items-center gap-3">
-              <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full" />
-              INDEX_KEPUASAN_USER
-            </span>
-            <div className="flex gap-4">
-              {[1, 2, 3, 4, 5].map(s => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setRating(s)}
-                  className={`w-14 h-14 flex items-center justify-center rounded-2xl border transition-all duration-300 ${rating === s ? 'bg-cyan-400 border-cyan-400 text-black shadow-[0_0_20px_rgba(34,211,238,0.5)]' : 'border-on-surface/10 hover:bg-on-surface/5'
-                    }`}
-                >
-                  <span className="text-xl font-black">{s}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <span className="label-mono opacity-40 flex items-center gap-3">
-              <div className="w-1.5 h-1.5 bg-pink-500 rounded-full" />
-              KOMENTAR_DI_GRID
-            </span>
-            <div className="relative">
-              <textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                placeholder="DEFINISIKAN_PENGALAMAN_ANDA_DI_SINI..."
-                className="w-full bg-surface/50 border border-on-surface/10 rounded-2xl p-8 min-h-[160px] focus:outline-none focus:border-cyan-400 transition-all text-xl font-medium tracking-tight placeholder:italic placeholder:opacity-20"
-              />
-              <div className="absolute bottom-6 right-6 label-mono opacity-10 pointer-events-none">CHAR_SYNC: {comment.length}</div>
-            </div>
-          </div>
-
-          <button
-            disabled={submitting}
-            className="w-full py-6 rounded-2xl bg-on-surface text-surface label-mono !font-black !text-[14px] tracking-[0.5em] hover:bg-cyan-400 hover:text-black hover:shadow-[0_0_40px_rgba(34,211,238,0.3)] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-4"
-          >
-            {submitting ? 'SINKRONISASI_AI...' : <><Send size={18} /> UNGGAH_KE_GRID</>}
-          </button>
+      {loadingSentiment ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {[1, 2].map((i) => (
+             <div key={i} className="h-32 bg-surface-dim rounded-2xl animate-pulse" />
+          ))}
         </div>
-      </form>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-        {spot.userReviews.map((review, idx) => (
-          <motion.div
-            key={review.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.1 }}
-            className="p-8 rounded-3xl border border-on-surface/5 hover:border-cyan-400/30 transition-all bg-surface-container-low group relative overflow-hidden"
-          >
-            <div className="absolute -right-4 -top-4 w-12 h-12 bg-on-surface/5 rounded-full blur-xl group-hover:bg-cyan-400/10 transition-all" />
-            <div className="flex justify-between items-start mb-8">
-              <div className="space-y-1">
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {analyzedReviews.map((review, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.1 }}
+              className="p-5 rounded-2xl border border-outline-variant bg-surface-bright shadow-sm relative overflow-hidden"
+            >
+              <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-on-surface opacity-20 rounded-full" />
-                  <span className="label-mono !text-[11px] font-black">{review.user}</span>
+                  <div className="w-8 h-8 bg-surface-dim rounded-full flex items-center justify-center text-primary font-bold">
+                    {idx + 1}
+                  </div>
+                  <span className="text-sm font-semibold text-on-surface">Pengunjung Google</span>
                 </div>
-                <p className="label-mono opacity-20 !text-[8px] ml-4">{review.date}</p>
-              </div>
-              <div className={`px-4 py-1 label-mono !text-[9px] font-black rounded-full border ${review.sentiment === 'POSITIVE' ? 'border-cyan-400 text-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.2)]' :
-                review.sentiment === 'NEGATIVE' ? 'border-pink-500 text-pink-500' : 'border-on-surface/20 opacity-40'
+                <div className={`px-2 py-1 text-[10px] font-bold rounded-md ${
+                  review.sentiment === 'POSITIVE' ? 'bg-green-50 text-green-600 border border-green-200' :
+                  review.sentiment === 'NEGATIVE' ? 'bg-red-50 text-red-600 border border-red-200' :
+                  'bg-gray-50 text-gray-500 border border-gray-200'
                 }`}>
-                {review.sentiment}
+                  {review.sentiment === 'POSITIVE' ? 'Positif' : review.sentiment === 'NEGATIVE' ? 'Negatif' : 'Netral'}
+                </div>
               </div>
-            </div>
 
-            <p className="text-xl font-medium tracking-tight opacity-70 leading-relaxed mb-8 italic">
-              "{review.comment}"
-            </p>
-
-            <div className="flex gap-1 pt-6 border-t border-on-surface/5">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className={`h-1 flex-1 rounded-full ${i < review.rating ? 'bg-cyan-400' : 'bg-on-surface/10'}`} />
-              ))}
-            </div>
-          </motion.div>
-        ))}
-      </div>
+              <p className="text-sm font-medium text-on-surface-variant leading-relaxed line-clamp-4">
+                "{review.text}"
+              </p>
+            </motion.div>
+          ))}
+        </div>
+      )}
     </section>
   );
 };
@@ -947,18 +906,6 @@ const DetailPage = ({ spot, userLocation, onUpdateSpot, onBack, onShare, isSaved
     fetchExtractedMenu();
   }, [spot.id]);
 
-  const handleAddReview = (newReview: Review) => {
-    const updatedReviews = [newReview, ...spot.userReviews];
-    const newRating = Number(((spot.rating * spot.reviews + newReview.rating) / (spot.reviews + 1)).toFixed(1));
-
-    onUpdateSpot({
-      ...spot,
-      userReviews: updatedReviews,
-      rating: newRating,
-      reviews: spot.reviews + 1
-    });
-  };
-
   const nextPhoto = useCallback(() => {
     setCurrentPhotoIndex((prev) => (prev + 1) % spot.imageUrls.length);
   }, [spot.imageUrls.length]);
@@ -1099,7 +1046,7 @@ const DetailPage = ({ spot, userLocation, onUpdateSpot, onBack, onShare, isSaved
               </section>
 
               {/* Review Form Component */}
-              <ReviewSection spot={spot} onAddReview={handleAddReview} />
+              <ReviewSection spot={spot} />
             </div>
 
             <div className="space-y-6">

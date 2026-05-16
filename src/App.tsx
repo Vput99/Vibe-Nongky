@@ -453,8 +453,8 @@ const HomePage = ({ spots, userLocation, locationName, setLocationName, onSelect
                 onClick={() => onSelectSpot(spot)}
                 className="flex-shrink-0 w-[260px] snap-start premium-card cursor-pointer group overflow-hidden"
               >
-                <div className="relative h-44 overflow-hidden bg-surface-dim">
-                  <img src={spot.imageUrl} alt={spot.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
+                <div className="relative h-44 overflow-hidden bg-surface-dim transform-gpu">
+                  <img src={spot.imageUrl} alt={spot.name} className="w-full h-full object-cover transform-gpu group-hover:scale-110 transition-transform duration-700 ease-out" />
                   <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-md text-on-surface px-2.5 py-1.5 rounded-lg text-xs font-bold shadow-sm flex items-center gap-1.5">
                     <Star size={14} className="text-yellow-500 fill-yellow-500" /> {spot.rating}
                   </div>
@@ -627,8 +627,8 @@ const AIFinderPage = ({ spots, userLocation, locationName, onSelectSpot }: { spo
             onClick={() => onSelectSpot(spot)}
             className="bg-surface-bright rounded-2xl p-4 flex flex-col sm:flex-row gap-4 cursor-pointer hover:border-primary/50 border border-outline-variant transition-all shadow-sm group"
           >
-            <div className="w-full sm:w-32 h-40 sm:h-32 flex-shrink-0 bg-surface-dim rounded-xl overflow-hidden relative">
-              <img src={spot.imageUrl} alt={spot.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+            <div className="w-full sm:w-32 h-40 sm:h-32 flex-shrink-0 bg-surface-dim rounded-xl overflow-hidden relative transform-gpu">
+              <img src={spot.imageUrl} alt={spot.name} className="w-full h-full object-cover transform-gpu group-hover:scale-110 transition-transform duration-500" />
             </div>
             <div className="flex-1 flex flex-col justify-between py-1">
               <div>
@@ -817,8 +817,8 @@ const SavedPage = ({ savedSpots, onSelectSpot }: { savedSpots: Spot[], onSelectS
               onClick={() => onSelectSpot(spot)}
               className="premium-card p-3 flex gap-4 cursor-pointer group"
             >
-              <div className="w-28 h-28 flex-shrink-0 bg-surface-dim rounded-xl overflow-hidden relative">
-                <img src={spot.imageUrl} alt={spot.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
+              <div className="w-28 h-28 flex-shrink-0 bg-surface-dim rounded-xl overflow-hidden relative transform-gpu">
+                <img src={spot.imageUrl} alt={spot.name} className="w-full h-full object-cover transform-gpu group-hover:scale-110 transition-transform duration-700 ease-out" />
                 <div className="absolute top-2 left-2 bg-white/95 backdrop-blur-md text-on-surface px-1.5 py-0.5 rounded text-[10px] font-bold shadow-sm flex items-center gap-1">
                   <Star size={10} className="text-yellow-500 fill-yellow-500" /> {spot.rating}
                 </div>
@@ -943,7 +943,7 @@ const DetailPage = ({ spot, userLocation, onUpdateSpot, onBack, onShare, isSaved
 
       <main className="max-w-4xl mx-auto pt-16">
         {/* Photo Gallery */}
-        <section className="relative w-full aspect-video sm:aspect-[21/9] bg-surface-dim overflow-hidden shadow-sm">
+        <section className="relative z-0 w-full h-[300px] sm:h-[450px] bg-[#0a0a0a] overflow-hidden shadow-sm flex items-center justify-center pb-6">
           <AnimatePresence mode="wait">
             <motion.img
               key={currentPhotoIndex}
@@ -953,20 +953,20 @@ const DetailPage = ({ spot, userLocation, onUpdateSpot, onBack, onShare, isSaved
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
             />
           </AnimatePresence>
 
-          <div className="absolute bottom-4 right-4 bg-black/60 text-white px-3.5 py-1.5 rounded-full text-xs font-bold backdrop-blur-md shadow-lg">
+          <div className="absolute bottom-10 right-4 z-30 bg-white/20 text-white px-3.5 py-1.5 rounded-full text-xs font-bold backdrop-blur-md shadow-lg border border-white/10">
             {currentPhotoIndex + 1} / {spot.imageUrls.length}
           </div>
 
           {spot.imageUrls.length > 1 && (
             <>
-              <button onClick={prevPhoto} className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/20 text-white rounded-full flex items-center justify-center backdrop-blur-md hover:bg-white/40 border border-white/30 transition-all shadow-lg active:scale-95">
+              <button onClick={prevPhoto} className="absolute z-30 left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 text-white rounded-full flex items-center justify-center backdrop-blur-md hover:bg-white/20 border border-white/20 transition-all shadow-lg active:scale-95">
                 <ChevronLeft size={26} />
               </button>
-              <button onClick={nextPhoto} className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/20 text-white rounded-full flex items-center justify-center backdrop-blur-md hover:bg-white/40 border border-white/30 transition-all shadow-lg active:scale-95">
+              <button onClick={nextPhoto} className="absolute z-30 right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 text-white rounded-full flex items-center justify-center backdrop-blur-md hover:bg-white/20 border border-white/20 transition-all shadow-lg active:scale-95">
                 <ArrowRight size={26} />
               </button>
             </>
@@ -1306,8 +1306,8 @@ const SpotsPage = ({ spots, userLocation, onSelectSpot }: { spots: Spot[], userL
                     transition={{ delay: idx * 0.1 }}
                     className="flex-shrink-0 w-64 snap-start premium-card cursor-pointer group overflow-hidden"
                   >
-                    <div className="relative h-40">
-                      <img src={s.imageUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
+                    <div className="relative h-40 transform-gpu overflow-hidden">
+                      <img src={s.imageUrl} className="w-full h-full object-cover transform-gpu group-hover:scale-110 transition-transform duration-700 ease-out" />
                       <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md text-on-surface px-2 py-1 rounded-lg text-xs font-bold shadow-sm flex items-center gap-1.5">
                         <Star size={12} className="text-yellow-500 fill-yellow-500" /> {s.rating}
                       </div>
@@ -1341,8 +1341,8 @@ const SpotsPage = ({ spots, userLocation, onSelectSpot }: { spots: Spot[], userL
                     onClick={() => onSelectSpot(s)}
                     className="premium-card p-3 flex gap-4 cursor-pointer group"
                   >
-                    <div className="w-28 h-28 flex-shrink-0 bg-surface-dim rounded-xl overflow-hidden relative">
-                      <img src={s.imageUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
+                    <div className="w-28 h-28 flex-shrink-0 bg-surface-dim rounded-xl overflow-hidden relative transform-gpu">
+                      <img src={s.imageUrl} className="w-full h-full object-cover transform-gpu group-hover:scale-110 transition-transform duration-700 ease-out" />
                       <div className="absolute top-2 left-2 bg-white/95 backdrop-blur-md text-on-surface px-1.5 py-0.5 rounded text-[10px] font-bold shadow-sm flex items-center gap-1">
                         <Star size={10} className="text-yellow-500 fill-yellow-500" /> {s.rating}
                       </div>
@@ -1497,14 +1497,21 @@ export default function App() {
       setLocationName(`Kordinat: ${lat.toFixed(2)}, ${lng.toFixed(2)}`);
     };
 
+    let lastLat: number | null = null;
+    let lastLng: number | null = null;
+
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
-        const coords = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
-        };
-        setUserLocation(coords);
-        resolveLocationName(coords.lat, coords.lng);
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        
+        // Cek jika perpindahan lebih dari ~50 meter (0.0005 derajat)
+        if (lastLat === null || lastLng === null || Math.abs(lastLat - lat) > 0.0005 || Math.abs(lastLng - lng) > 0.0005) {
+          lastLat = lat;
+          lastLng = lng;
+          setUserLocation({ lat, lng });
+          resolveLocationName(lat, lng);
+        }
       },
       (error) => {
         console.error("GPS_SYNC_FAILURE", error);

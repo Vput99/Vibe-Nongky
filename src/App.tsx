@@ -646,15 +646,16 @@ const AIFinderPage = ({ spots, userLocation, locationName, onSelectSpot }: { spo
     try {
       const cleanLocationName = locationName.includes('...') ? '' : locationName.replace('.OS', '').replace('.CORE', '');
       const searchOptions: any = {
-        textQuery: query ? `${query} cafe warung ${cleanLocationName}` : `cafe warung kopi ${cleanLocationName}`,
+        textQuery: query,
         fields: ['id', 'displayName', 'location', 'formattedAddress', 'rating', 'userRatingCount', 'priceLevel', 'photos', 'reviews'],
-        maxResultCount: 15,
+        maxResultCount: 20,
+        rankPreference: 'DISTANCE'
       };
 
       if (userLocation) {
         searchOptions.locationBias = {
           center: userLocation,
-          radius: 15000
+          radius: 20000
         };
       }
 

@@ -422,7 +422,7 @@ const HomePage = ({ spots, userLocation, locationName, setLocationName, onSelect
 
         setNearbyResults(processed);
 
-        if (locationName.includes('LAT_') || locationName.includes('MENYINGKRONKAN')) {
+        if (locationName.includes('Kordinat') || locationName.includes('Mencari Lokasi')) {
           const firstResult = processed[0];
           if (firstResult && firstResult.location) {
             const parts = firstResult.location.split(',');
@@ -1505,7 +1505,7 @@ export default function App() {
   const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
   const [spots, setSpots] = useState<Spot[]>(MOCK_SPOTS);
   const [userLocation, setUserLocation] = useState<{ lat: number, lng: number } | null>(null);
-  const [locationName, setLocationName] = useState<string>('MENYINGKRONKAN...');
+  const [locationName, setLocationName] = useState<string>('Mencari Lokasi...');
   const [shareStatus, setShareStatus] = useState<string | null>(null);
   const [savedSpots, setSavedSpots] = useState<Spot[]>([]);
 
@@ -1561,9 +1561,58 @@ export default function App() {
 
   useEffect(() => {
     if (!("geolocation" in navigator)) {
-      setLocationName('GEO_NOT_SUPPORTED');
+      setLocationName('Akses Lokasi Tidak Tersedia');
       return;
     }
+
+    const resolveLocationName = async (lat: number, lng: number) => {
+      // 1. Try Google Maps Geocoder if available
+      if ((window as any).google && (window as any).google.maps) {
+        const geocoder = new (window as any).google.maps.Geocoder();
+        try {
+          const response = await new Promise<any>((resolve, reject) => {
+            geocoder.geocode({ location: { lat, lng } }, (results: any, status: any) => {
+              if (status === 'OK' && results[0]) resolve(results);
+              else reject(status);
+            });
+          });
+
+          if (response && response[0]) {
+            const comps = response[0].address_components;
+            const cityComp = comps.find((c: any) => c.types.includes('locality')) ||
+                             comps.find((c: any) => c.types.includes('administrative_area_level_2'));
+
+            if (cityComp) {
+              const cityName = cityComp.long_name
+                .replace(/Kabupaten /i, '')
+                .replace(/Kota /i, '');
+              setLocationName(cityName);
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn('Google Maps Geocoding failed, trying fallback...', e);
+        }
+      }
+
+      // 2. Fallback to OpenStreetMap Nominatim
+      try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10`);
+        const data = await response.json();
+        if (data && data.address) {
+          const city = data.address.city || data.address.town || data.address.county || data.address.state;
+          if (city) {
+            setLocationName(city.replace(/Kabupaten /i, '').replace(/Kota /i, ''));
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('OSM Geocoding failed.', e);
+      }
+
+      // 3. Final Fallback to coordinates
+      setLocationName(`Kordinat: ${lat.toFixed(2)}, ${lng.toFixed(2)}`);
+    };
 
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
@@ -1572,34 +1621,12 @@ export default function App() {
           lng: position.coords.longitude
         };
         setUserLocation(coords);
-
-        // Use Google Maps Geocoder instead of fetch to avoid CORS
-        if ((window as any).google && (window as any).google.maps) {
-          const geocoder = new (window as any).google.maps.Geocoder();
-          geocoder.geocode({ location: coords }, (results: any, status: any) => {
-            if (status === 'OK' && results[0]) {
-              const comps = results[0].address_components;
-              const cityComp = comps.find((c: any) => c.types.includes('locality')) || 
-                               comps.find((c: any) => c.types.includes('administrative_area_level_2'));
-              
-              const cityName = cityComp ? cityComp.long_name.toUpperCase()
-                .replace('KABUPATEN ', '')
-                .replace('KOTA ', '') : 'GRID_AKTIF';
-                
-              setLocationName(cityName + '.OS');
-            } else {
-              setLocationName('GRID_AKTIF.OS');
-            }
-          });
-        } else {
-          // Fallback if google maps not loaded yet
-          setLocationName(`LAT_${coords.lat.toFixed(2)}_LNG_${coords.lng.toFixed(2)}`);
-        }
+        resolveLocationName(coords.lat, coords.lng);
       },
       (error) => {
         console.error("GPS_SYNC_FAILURE", error);
         if (!userLocation) {
-          setLocationName('SIGNAL_LOST.OS');
+          setLocationName('Lokasi Tidak Ditemukan');
         }
       },
       { 
@@ -1614,8 +1641,8 @@ export default function App() {
 
   // Force update location name if geocoding is stuck but we have coordinates
   useEffect(() => {
-    if (userLocation && locationName === 'MENYINGKRONKAN...') {
-      setLocationName(`LAT_${userLocation.lat.toFixed(2)}_LNG_${userLocation.lng.toFixed(2)}`);
+    if (userLocation && locationName === 'Mencari Lokasi...') {
+      setLocationName(`Kordinat: ${userLocation.lat.toFixed(2)}, ${userLocation.lng.toFixed(2)}`);
     }
   }, [userLocation, locationName]);
 
@@ -1674,18 +1701,20 @@ export default function App() {
 
       <div className="min-h-screen bg-transparent font-sans text-on-surface select-none perspective-2000">
         {!userLocation && (
-          <div className="fixed inset-0 z-[100] bg-surface flex flex-col items-center justify-center space-y-8">
-            <motion.div
-              animate={{ 
-                rotateY: 360,
-                translateZ: [0, 100, 0]
-              }}
-              transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-              className="w-24 h-24 border-t-4 border-cyan-400 rounded-full shadow-[0_0_50px_rgba(34,211,238,0.5)] preserve-3d"
-            />
-            <div className="text-center space-y-2">
-              <h1 className="heading-bold text-3xl tracking-[0.4em] hologram-text">MENCARI_SANYAL_GPS</h1>
-              <p className="label-mono opacity-40">HARAP_BERIKAN_IZIN_LOKASI_UNTUK_SINKRONISASI_GRID</p>
+          <div className="fixed inset-0 z-[100] bg-surface-bright flex flex-col items-center justify-center space-y-6">
+            <div className="relative">
+              <motion.div
+                animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
+                transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                className="absolute inset-0 bg-primary/20 rounded-full"
+              />
+              <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center text-white shadow-lg relative z-10">
+                <MapPin size={36} />
+              </div>
+            </div>
+            <div className="text-center space-y-2 max-w-xs px-4">
+              <h1 className="text-2xl font-bold text-on-surface">Mencari Lokasi</h1>
+              <p className="text-sm text-on-surface-variant">Harap berikan izin akses lokasi agar kami bisa merekomendasikan tempat terbaik di sekitarmu.</p>
             </div>
           </div>
         )}

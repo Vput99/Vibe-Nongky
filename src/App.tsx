@@ -15,74 +15,9 @@ import {
   List,
   Send
 } from 'lucide-react';
-import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { APIProvider, Map, AdvancedMarker, InfoWindow, Pin, useMapsLibrary, useMap } from '@vis.gl/react-google-maps';
 import { GoogleGenAI } from "@google/genai";
-
-// --- 3D Components ---
-
-const Scene3D = () => {
-  return (
-    <div className="fixed inset-0 -z-20 overflow-hidden pointer-events-none">
-      <div className="absolute inset-0 bg-mesh opacity-50" />
-      <div className="absolute inset-0 grid-3d opacity-20" />
-      <motion.div
-        animate={{
-          scale: [1, 1.2, 1],
-          rotate: [0, 5, 0],
-          opacity: [0.1, 0.2, 0.1]
-        }}
-        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-        className="absolute top-[-20%] left-[-10%] w-[150%] h-[150%] bg-[radial-gradient(circle_at_center,_rgba(34,211,238,0.1)_0%,_transparent_50%)]"
-      />
-    </div>
-  );
-};
-
-const TiltCard: React.FC<{ children: React.ReactNode, className?: string }> = ({ children, className = "" }) => {
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-
-  const mouseXSpring = useSpring(x);
-  const mouseYSpring = useSpring(y);
-
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["10deg", "-10deg"]);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-10deg", "10deg"]);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const width = rect.width;
-    const height = rect.height;
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-    const xPct = mouseX / width - 0.5;
-    const yPct = mouseY / height - 0.5;
-    x.set(xPct);
-    y.set(yPct);
-  };
-
-  const handleMouseLeave = () => {
-    x.set(0);
-    y.set(0);
-  };
-
-  return (
-    <motion.div
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      style={{
-        rotateY,
-        rotateX,
-        transformStyle: "preserve-3d",
-      }}
-      className={`relative ${className}`}
-    >
-      <div style={{ transform: "translateZ(50px)" }} className="h-full w-full">
-        {children}
-      </div>
-    </motion.div>
-  );
-};
 
 // --- Auth / Key Config ---
 const MAP_KEY =
@@ -101,7 +36,7 @@ const hasValidKey = Boolean(MAP_KEY) && MAP_KEY !== 'YOUR_API_KEY';
 const ai = new GoogleGenAI({ apiKey: GEMINI_KEY || 'MISSING_KEY' });
 
 // --- Types ---
-type Page = 'radar' | 'spots' | 'ai-finder' | 'detail';
+type Page = 'radar' | 'spots' | 'ai-finder' | 'detail' | 'saved';
 
 interface Review {
   id: string;
@@ -238,33 +173,22 @@ function getDistance(l1: { lat: number, lng: number }, l2: { lat: number, lng: n
 // --- Components ---
 
 const TopAppBar = ({ onNavigateToAI }: { onNavigateToAI: () => void }) => (
-  <header className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] w-[calc(100%-2rem)] max-w-5xl rounded-2xl bg-surface/40 backdrop-blur-xl border border-on-surface/10 h-16 shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
-    <div className="flex justify-between items-center w-full px-6 h-full text-on-surface">
-      <div className="flex items-center gap-3 group cursor-default">
-        <motion.div
-          animate={{ rotate: [0, 90, 0] }}
-          transition={{ repeat: Infinity, duration: 4 }}
-          className="w-10 h-10 rounded-xl bg-cyan-400 flex items-center justify-center shadow-[0_0_20px_rgba(34,211,238,0.4)]"
-        >
-          <Radar size={20} className="text-black" />
-        </motion.div>
-        <div className="flex flex-col">
-          <span className="heading-bold text-xl leading-none tracking-tighter">Vibe_OS</span>
-          <span className="label-mono text-[7px] opacity-40">BETA_BUILD_2026 // BY_VIC</span>
+  <header className="fixed top-0 left-0 w-full z-[60] glass-header h-16">
+    <div className="flex justify-between items-center max-w-5xl mx-auto px-6 h-full text-on-surface">
+      <div className="flex items-center gap-2">
+        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-[#0E84C3] flex items-center justify-center shadow-md">
+          <MapPin size={18} className="text-white" />
         </div>
+        <span className="heading-bold text-xl text-primary tracking-tight">NongkrongYuk</span>
       </div>
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-4">
         <button 
           onClick={onNavigateToAI}
-          className="flex items-center gap-2 bg-on-surface text-surface px-4 py-2 rounded-full label-mono !text-[10px] font-black hover:bg-cyan-400 hover:text-black transition-all active:scale-95 shadow-lg"
+          className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold hover:bg-primary hover:text-white transition-all duration-300 active:scale-95 shadow-sm"
         >
-          <Sparkles size={14} />
-          <span>AKSES_PENCARIAN</span>
+          <Sparkles size={16} />
+          <span>Tanya AI</span>
         </button>
-        <div className="hidden sm:flex items-center gap-2 label-mono opacity-40 text-[8px]">
-          <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-          SYSTEM_NOMINAL
-        </div>
       </div>
     </div>
   </header>
@@ -272,42 +196,42 @@ const TopAppBar = ({ onNavigateToAI }: { onNavigateToAI: () => void }) => (
 
 const BottomNavBar = ({ activePage, setActivePage }: { activePage: Page, setActivePage: (p: Page) => void }) => {
   const tabs: { id: Page, icon: any, label: string }[] = [
-    { id: 'radar' as const, icon: Radar, label: 'RADAR_SCAN' },
-    { id: 'spots' as const, icon: Coffee, label: 'TITIK_LOKAL' },
-    { id: 'ai-finder' as const, icon: Sparkles, label: 'PENCARI_AI' },
+    { id: 'radar' as const, icon: MapPin, label: 'Beranda' },
+    { id: 'spots' as const, icon: Coffee, label: 'Eksplor' },
+    { id: 'ai-finder' as const, icon: Sparkles, label: 'AI Asisten' },
+    { id: 'saved' as any, icon: Bookmark, label: 'Tersimpan' }
   ];
 
   return (
-    <nav className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md z-[60] bg-black/60 backdrop-blur-2xl flex justify-around items-center h-20 px-3 rounded-3xl shadow-[0_20px_80px_rgba(0,0,0,0.8)] border border-white/10 preserve-3d">
-      {tabs.map((tab) => {
-        const isActive = activePage === tab.id;
-        const Icon = tab.icon;
+    <nav className="fixed bottom-0 left-0 w-full z-[60] glass-nav pb-safe">
+      <div className="flex justify-around items-center h-16 max-w-md mx-auto px-2">
+        {tabs.map((tab) => {
+          const isActive = activePage === tab.id;
+          const Icon = tab.icon;
 
-        return (
-          <button
-            key={tab.id}
-            onClick={() => setActivePage(tab.id)}
-            className={`relative flex flex-col items-center justify-center gap-1.5 transition-all duration-500 rounded-2xl px-6 py-2 group overflow-hidden ${isActive
-              ? 'scale-110'
-              : 'opacity-40 hover:opacity-100 hover:bg-white/5'
-              }`}
-          >
-            {isActive && (
-              <motion.div
-                layoutId="nav-bg"
-                className="absolute inset-0 bg-cyan-400 shadow-[0_0_30px_rgba(34,211,238,0.4)]"
-                transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
-              />
-            )}
-            <div className="relative z-10 flex flex-col items-center gap-1">
-              <Icon size={20} strokeWidth={isActive ? 3 : 2} className={isActive ? 'text-black' : 'text-white'} />
-              <span className={`hidden sm:block label-mono text-[8px] font-black tracking-[0.2em] ${isActive ? 'text-black' : 'text-white'}`}>
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActivePage(tab.id)}
+              className="flex-1 flex flex-col items-center justify-center gap-1 py-2 group"
+            >
+              <div className={`relative flex items-center justify-center transition-all ${isActive ? 'text-primary' : 'text-on-surface-variant group-hover:text-primary/70'}`}>
+                {isActive && (
+                  <motion.div
+                    layoutId="nav-pill"
+                    className="absolute inset-0 bg-primary/10 rounded-full w-12 h-8 -mx-3 -my-1.5"
+                    transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+                <Icon size={22} strokeWidth={isActive ? 2.5 : 2} className="relative z-10" />
+              </div>
+              <span className={`text-[10px] font-semibold transition-colors ${isActive ? 'text-primary' : 'text-on-surface-variant'}`}>
                 {tab.label}
               </span>
-            </div>
-          </button>
-        );
-      })}
+            </button>
+          );
+        })}
+      </div>
     </nav>
   );
 };
@@ -368,7 +292,15 @@ const HomePage = ({ spots, userLocation, locationName, setLocationName, onSelect
 }) => {
   const [nearbyResults, setNearbyResults] = useState<Spot[]>([]);
   const [loadingNearby, setLoadingNearby] = useState(false);
+  const [activeCategory, setActiveCategory] = useState('Semua');
   const placesLib = useMapsLibrary('places');
+
+  const categories = [
+    { id: 'Semua', label: 'Semua', icon: MapPin },
+    { id: 'Cafe', label: 'Cafe', icon: Coffee },
+    { id: 'Restoran', label: 'Restoran', icon: List },
+    { id: 'Warung', label: 'Warung', icon: Coffee },
+  ];
 
   useEffect(() => {
     if (!placesLib || !userLocation) return;
@@ -376,15 +308,23 @@ const HomePage = ({ spots, userLocation, locationName, setLocationName, onSelect
     const fetchNearby = async () => {
       setLoadingNearby(true);
       try {
+        const queryMap: Record<string, string> = {
+          'Semua': 'Restaurant OR Cafe OR Warung OR Warkop OR Kedai',
+          'Cafe': 'Cafe OR Coffee Shop OR Kopi',
+          'Restoran': 'Restaurant OR Tempat Makan',
+          'Warung': 'Warung OR Warkop OR Kedai OR Angkringan'
+        };
+        const textQuery = queryMap[activeCategory];
+
         const cleanName = locationName.includes('...') ? '' : locationName.replace('.OS', '');
         const { places } = await placesLib.Place.searchByText({
-          textQuery: `Restaurant OR Cafe OR Warung OR Warkop OR Kedai OR Angkringan OR Kopi OR Ngopi`.trim(),
+          textQuery: textQuery,
           locationBias: {
             center: userLocation,
             radius: 1500,
           },
           fields: ['id', 'displayName', 'location', 'formattedAddress', 'rating', 'userRatingCount', 'priceLevel', 'photos', 'reviews'],
-          maxResultCount: 20,
+          maxResultCount: 15,
           rankPreference: 'DISTANCE'
         });
 
@@ -397,18 +337,18 @@ const HomePage = ({ spots, userLocation, locationName, setLocationName, onSelect
           const photos = p.photos?.slice(0, 5).map(photo => photo.getURI({ maxWidth: 800 })) || [];
           return {
             id: p.id,
-            name: p.displayName || 'UNKNOWN_NODE',
-            location: p.formattedAddress?.split(',')[0] || 'COORD_LOST',
+            name: p.displayName || 'Lokasi',
+            location: p.formattedAddress?.split(',')[0] || 'Tidak diketahui',
             rating: p.rating || 0,
             reviews: p.userRatingCount || 0,
             price: '$'.repeat(Number(p.priceLevel) || 1),
-            openUntil: 'SYNC_REQUIRED',
+            openUntil: 'Buka',
             imageUrl: photos[0] || 'https://images.unsplash.com/photo-1501339817302-38203b9f9fef?auto=format&fit=crop&w=400&q=80',
             imageUrls: photos.length > 0 ? photos : ['https://images.unsplash.com/photo-1501339817302-38203b9f9fef?auto=format&fit=crop&w=400&q=80'],
             coordinates: { lat: p.location?.lat() || 0, lng: p.location?.lng() || 0 },
             stats: (() => {
               const { occupancy, label } = calculateOccupancy(p.rating || 0, p.userRatingCount || 0);
-              return { crowd: label, occupancy, wifi: (200 + Math.floor(Math.random() * 300)) + ' Mbps' };
+              return { crowd: label, occupancy, wifi: 'Tersedia' };
             })(),
             userReviews: [],
             googleReviews: (p as any).reviews?.map((r: any) => ({ text: r.text })) || []
@@ -417,15 +357,13 @@ const HomePage = ({ spots, userLocation, locationName, setLocationName, onSelect
 
         setNearbyResults(processed);
 
-        // FALLBACK: If locationName is still generic, try to guess city from the first result
-        if (locationName.includes('GRID_AKTIF') || locationName.includes('LAT_')) {
+        if (locationName.includes('Kordinat') || locationName.includes('Mencari Lokasi')) {
           const firstResult = processed[0];
           if (firstResult && firstResult.location) {
             const parts = firstResult.location.split(',');
             if (parts.length >= 2) {
-              const cityPart = parts[parts.length - 2].trim().toUpperCase()
-                .replace('KOTA ', '').replace('KABUPATEN ', '');
-              setLocationName(cityPart + '.OS');
+              const cityPart = parts[parts.length - 2].trim();
+              setLocationName(cityPart);
             }
           }
         }
@@ -437,199 +375,135 @@ const HomePage = ({ spots, userLocation, locationName, setLocationName, onSelect
     };
 
     fetchNearby();
-  }, [placesLib, userLocation, locationName, setLocationName]);
+  }, [placesLib, userLocation, activeCategory, locationName, setLocationName]);
 
-  // Generate semi-random but stable positions for spots on the radar
   const displaySpots = nearbyResults.length > 0 ? nearbyResults : spots;
-  const radarSpots = displaySpots.map((spot, i) => {
-    // Better seed/hash for more unique angles
-    let hash = 0;
-    for (let j = 0; j < spot.id.length; j++) {
-      hash = (hash << 5) - hash + spot.id.charCodeAt(j);
-      hash |= 0;
-    }
-    
-    const angle = Math.abs(hash % 360);
-    
-    // Calculate radius based on real distance (max 5km for 50% radius)
-    let radius = 40; // Default
-    if (userLocation && spot.coordinates) {
-      const dist = getDistance(userLocation, spot.coordinates);
-      // Map 0-5km to 15-48% radius
-      radius = Math.min(48, 15 + (dist / 5) * 33);
-    } else {
-      radius = 15 + (Math.abs(hash % 30));
-    }
-
-    return { spot, angle, radius };
-  });
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="pt-24 pb-20 px-4 sm:px-8 max-w-4xl mx-auto overflow-hidden"
+      className="pt-20 pb-24 max-w-4xl mx-auto overflow-x-hidden"
     >
-      {/* 3D Radar Scanner Section */}
-      <section className="relative perspective-2000 mb-16">
-        <motion.div
-          animate={{ rotateX: [15, 25, 15], rotateY: [-10, 10, -10] }}
-          transition={{ repeat: Infinity, duration: 10, ease: "easeInOut" }}
-          className="relative aspect-square w-full max-w-[500px] mx-auto preserve-3d flex items-center justify-center bg-[radial-gradient(circle_at_center,_rgba(34,211,238,0.15)_0%,_transparent_70%)] rounded-full border border-cyan-400/10"
-        >
-          {/* 3D Layers */}
-          <div className="absolute inset-0 border border-cyan-400/20 rounded-full" style={{ transform: 'translateZ(-50px)' }}></div>
-          <div className="absolute inset-[10%] border border-on-surface/10 rounded-full" style={{ transform: 'translateZ(20px)' }}></div>
-          <div className="absolute inset-[30%] border border-on-surface/15 rounded-full" style={{ transform: 'translateZ(50px)' }}></div>
-          <div className="absolute inset-[45%] border border-cyan-400/10 rounded-full border-dashed" style={{ transform: 'translateZ(80px)' }}></div>
+      {/* Hero Header Section */}
+      <section className="px-6 py-8 hero-gradient text-white rounded-b-[2.5rem] shadow-lg mb-8 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4"></div>
 
-          {/* Distance Indicators */}
-          <div className="absolute top-1/2 left-[5%] -translate-y-1/2 label-mono opacity-40 text-[8px] text-cyan-400" style={{ transform: 'translateZ(20px)' }}>2.5KM</div>
-          <div className="absolute top-1/2 left-[20%] -translate-y-1/2 label-mono opacity-20 text-[8px]" style={{ transform: 'translateZ(50px)' }}>1.2KM</div>
-
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ repeat: Infinity, duration: 8, ease: 'linear' }}
-            className="absolute inset-0 radar-sweep opacity-30 z-10 origin-center"
-          />
-
-          {/* Floating Center Core */}
-          <motion.div
-            animate={{ 
-              y: [-10, 10, -10],
-              translateZ: [100, 150, 100],
-              rotateY: [0, 15, 0]
-            }}
-            transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-            className="relative z-20 w-32 h-32 bg-cyan-400 text-surface flex flex-col items-center justify-center shadow-[0_0_60px_rgba(34,211,238,0.5)] skew-x-[-6deg] group hover:scale-110 transition-transform cursor-pointer preserve-3d"
-          >
-            <Radar size={40} strokeWidth={3} className="text-black group-hover:animate-pulse" />
-            <span className="label-mono mt-2 font-black !tracking-[0.4em] text-black">CORE_OS</span>
-          </motion.div>
-
-          {/* Dynamic Pings */}
-          {radarSpots.map(({ spot, angle, radius }) => (
-            <div key={spot.id} onClick={() => onSelectSpot(spot)} className="preserve-3d absolute inset-0">
-              <RadarPing spot={spot} angle={angle} radius={radius} />
-            </div>
-          ))}
-
-          {/* Background Grid Lines */}
-          <div className="absolute top-1/2 left-0 w-full h-[1px] bg-cyan-400/20" style={{ transform: 'translateZ(-20px)' }} />
-          <div className="absolute left-1/2 top-0 h-full w-[1px] bg-cyan-400/20" style={{ transform: 'translateZ(-20px)' }} />
-        </motion.div>
-
-        {/* 3D Decorative Layers */}
-        <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-3/4 h-1/4 bg-cyan-400/5 blur-[100px] -z-10 rounded-full" />
-      </section>
-
-      {/* Bento Status Area */}
-      <TiltCard className="mb-12">
-        <motion.div
-          whileHover={{ scale: 1.02 }}
-          className="p-10 rounded-3xl border border-on-surface/10 bg-surface-container shadow-[0_40px_100px_rgba(0,0,0,0.5)] relative overflow-hidden group perspective-1000"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-          <div className="absolute -right-10 -top-10 w-64 h-64 bg-cyan-400/10 blur-[100px] rounded-full group-hover:scale-150 transition-transform duration-1000" />
-
-          <div className="relative z-10 flex flex-col sm:flex-row justify-between items-end sm:items-center gap-6">
-            <div className="space-y-4">
-              <span className="label-mono !text-cyan-400 flex items-center gap-3">
-                <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_8px_cyan]" />
-                SYST_LOCATOR: ACTIVE
-              </span>
-              <h2 className="text-5xl sm:text-7xl heading-bold text-transparent bg-clip-text bg-gradient-to-r from-on-surface to-on-surface/50 leading-none hologram-text">{locationName}</h2>
-            </div>
-            <div className="flex flex-col items-end">
-              <span className="label-mono opacity-20 text-[8px] mb-1">LAT_LNG_STREAM</span>
-              <span className="label-mono text-[9px] font-black">{userLocation?.lat.toFixed(4) || '0.0000'} // {userLocation?.lng.toFixed(4) || '0.0000'}</span>
+        <div className="flex flex-col gap-5 relative z-10">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm opacity-90 font-medium mb-1">Lokasi Anda</p>
+              <h1 className="text-3xl font-bold tracking-tight drop-shadow-sm">{locationName.replace('.OS', '')}</h1>
             </div>
           </div>
-        </motion.div>
-      </TiltCard>
 
-      {/* Enhanced Horizontal Spots */}
-      <section className="mb-16">
-        <div className="flex justify-between items-center mb-8 border-b border-on-surface/5 pb-4">
-          <h2 className="text-xl heading-bold opacity-40">Titik_Terdekat_Hari_Ini</h2>
-          <div className="flex gap-1">
-            <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full" />
-            <div className="w-1.5 h-1.5 bg-pink-500 rounded-full" />
+          <div className="relative mt-2">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <MapPin size={18} className="text-gray-400" />
+            </div>
+            <input
+              type="text"
+              className="w-full bg-white text-on-surface rounded-2xl py-4 pl-12 pr-4 shadow-[0_8px_30px_rgba(0,0,0,0.12)] focus:outline-none focus:ring-4 focus:ring-white/40 text-sm font-medium transition-all"
+              placeholder="Cari tempat nongkrong..."
+            />
           </div>
         </div>
-        <div className="flex gap-8 overflow-x-auto pb-12 scrollbar-hide snap-x perspective-1000">
+      </section>
+
+      {/* Category Categories */}
+      <section className="px-6 mb-10">
+        <h2 className="text-lg font-bold text-on-surface mb-5">Kategori</h2>
+        <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 -mx-6 px-6">
+          {categories.map((cat) => {
+            const Icon = cat.icon;
+            const isActive = activeCategory === cat.id;
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.id)}
+                className={`flex flex-col items-center gap-3 min-w-[72px] transition-all duration-300 ${isActive ? 'opacity-100' : 'opacity-80 hover:opacity-100 hover:-translate-y-1'}`}
+              >
+                <div className={`w-16 h-16 rounded-[1.25rem] flex items-center justify-center transition-all duration-300 ${isActive ? 'bg-gradient-to-br from-primary to-[#0E84C3] text-white shadow-[0_8px_20px_rgba(27,160,226,0.4)] scale-105' : 'bg-white text-primary shadow-[0_4px_15px_rgba(0,0,0,0.05)] border border-gray-50'}`}>
+                  <Icon size={26} strokeWidth={isActive ? 2.5 : 2} />
+                </div>
+                <span className={`text-xs font-bold ${isActive ? 'text-primary' : 'text-on-surface-variant'}`}>{cat.label}</span>
+              </button>
+            )
+          })}
+        </div>
+      </section>
+
+      {/* Recommendations */}
+      <section className="mb-12">
+        <div className="flex justify-between items-center mb-5 px-6">
+          <h2 className="text-lg font-bold text-on-surface">Rekomendasi Terdekat</h2>
+          <button className="text-sm font-bold text-primary hover:text-[#0E84C3] transition-colors">Lihat Semua</button>
+        </div>
+
+        <div className="flex gap-5 overflow-x-auto pb-8 px-6 scrollbar-hide snap-x">
           {loadingNearby ? (
             [1, 2, 3].map(i => (
-              <div key={i} className="flex-shrink-0 w-80 h-96 bg-on-surface/5 animate-pulse rounded-2xl" />
+              <div key={i} className="flex-shrink-0 w-[260px] h-[300px] bg-surface-dim animate-pulse rounded-[1.5rem]" />
             ))
           ) : (
-            displaySpots.slice(0, 6).map((spot, idx) => (
-              <TiltCard key={spot.id} className="flex-shrink-0 w-80 snap-center">
-                <motion.div
-                  onClick={() => onSelectSpot(spot)}
-                  initial={{ opacity: 0, z: -50 }}
-                  animate={{ opacity: 1, z: 0 }}
-                  transition={{ delay: idx * 0.1 }}
-                  className="rounded-2xl overflow-hidden bg-surface-container-high border border-on-surface/10 hover:border-cyan-400/30 transition-all cursor-pointer group shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
-                >
-                  <div className="relative h-56 overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10 opacity-60 group-hover:opacity-40 transition-opacity" />
-                    <img src={spot.imageUrl} alt={spot.name} className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700" />
-                    <div className="absolute top-4 right-4 bg-cyan-400 text-black px-3 py-1 label-mono !font-black !text-[12px] z-20 neon-glow-cyan">
-                      {spot.rating}★
-                    </div>
-                    <div className="absolute bottom-4 left-4 z-20">
-                      <span className="label-mono !text-surface !text-[10px] bg-on-surface/20 backdrop-blur-md px-2 py-1">{spot.price}</span>
-                    </div>
+            displaySpots.slice(0, 6).map((spot) => (
+              <motion.div
+                key={spot.id}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => onSelectSpot(spot)}
+                className="flex-shrink-0 w-[260px] snap-start premium-card cursor-pointer group overflow-hidden"
+              >
+                <div className="relative h-44 overflow-hidden bg-surface-dim">
+                  <img src={spot.imageUrl} alt={spot.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
+                  <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-md text-on-surface px-2.5 py-1.5 rounded-lg text-xs font-bold shadow-sm flex items-center gap-1.5">
+                    <Star size={14} className="text-yellow-500 fill-yellow-500" /> {spot.rating}
                   </div>
-                  <div className="p-8 space-y-6">
-                    <div>
-                      <h3 className="text-2xl heading-bold mb-1 group-hover:text-cyan-400 transition-colors uppercase truncate hologram-text">{spot.name}</h3>
-                      <p className="label-mono opacity-40 text-[10px]">{spot.location}</p>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-4 border-t border-on-surface/5">
-                      <div className="flex flex-col gap-1">
-                        <span className="label-mono text-[8px] opacity-40">CROWD_LVL</span>
-                        <span className="text-xs font-bold uppercase tracking-widest text-pink-500">{spot.stats.crowd}</span>
-                      </div>
-                      <ArrowRight size={20} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all text-cyan-400" />
-                    </div>
+                </div>
+                <div className="p-5 space-y-2">
+                  <h3 className="text-base font-bold text-on-surface truncate group-hover:text-primary transition-colors">{spot.name}</h3>
+                  <div className="flex items-center text-on-surface-variant text-xs gap-1.5 font-medium">
+                    <MapPin size={14} className="text-primary/70" />
+                    <span className="truncate">{spot.location}</span>
                   </div>
-                </motion.div>
-              </TiltCard>
+                  <div className="flex items-center justify-between pt-3 mt-1 border-t border-gray-50">
+                    <span className="text-sm font-bold text-primary">{spot.price}</span>
+                    <span className="text-[10px] font-bold text-tertiary bg-tertiary/10 px-2.5 py-1 rounded-full">{spot.stats.crowd}</span>
+                  </div>
+                </div>
+              </motion.div>
             ))
           )}
         </div>
       </section>
 
-      {/* Neon AI CTA */}
-      <motion.section
-        whileHover={{ scale: 0.98 }}
-        onClick={onNavigateToAI}
-        className="p-12 rounded-3xl border-2 border-cyan-400/30 bg-on-surface text-surface relative overflow-hidden group cursor-pointer shadow-[0_0_80px_rgba(34,211,238,0.2)]"
-      >
-        <div className="absolute -right-20 -top-20 w-80 h-80 bg-cyan-400/20 rounded-full blur-[100px] group-hover:scale-125 transition-transform duration-1000" />
-        <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-pink-500/10 rounded-full blur-[100px]" />
-
-        <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-8">
-          <div className="space-y-6 text-center sm:text-left">
-            <span className="label-mono !text-black bg-cyan-400 px-3 py-1 font-black">AI_CORE_ACTIVE</span>
-            <div className="space-y-2">
-              <h3 className="text-4xl heading-bold tracking-tight">Kopi Favoritmu Menunggu.</h3>
-              <p className="text-lg font-medium italic opacity-60 max-w-sm">\"Mesin kami siap memindai kafe terbaik yang sesuai dengan vibe-mu saat ini.\"</p>
+      {/* Tanya AI Banner */}
+      <section className="px-6 mb-8">
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={onNavigateToAI}
+          className="ai-gradient rounded-[1.5rem] p-6 relative overflow-hidden flex items-center justify-between cursor-pointer border border-primary/10 shadow-[0_8px_30px_rgba(27,160,226,0.12)] transition-all duration-300"
+        >
+          <div className="relative z-10 space-y-2 max-w-[70%]">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="bg-white/60 p-1.5 rounded-lg backdrop-blur-sm">
+                <Sparkles size={16} className="text-primary" />
+              </div>
+              <span className="text-[10px] font-bold text-primary tracking-wider uppercase">AI ASISTEN</span>
             </div>
+            <h3 className="text-xl font-bold text-on-primary-container leading-tight drop-shadow-sm">Cari Tempat Sesuai Mood?</h3>
+            <p className="text-sm font-medium text-on-primary-container/80">Tanya AI kami untuk rekomendasi terbaik.</p>
           </div>
-
-          <button 
-            onClick={onNavigateToAI}
-            className="flex items-center gap-4 px-8 py-5 bg-surface text-on-surface rounded-full font-black uppercase tracking-[0.2em] text-xs hover:bg-cyan-400 hover:text-black transition-all group-hover:shadow-[0_0_30px_rgba(34,211,238,0.5)] active:scale-95"
-          >
-            Akses_Pencari <ArrowRight size={22} className="group-hover:translate-x-2 transition-transform" />
-          </button>
-        </div>
-      </motion.section>
+          <div className="relative z-10 w-12 h-12 bg-white rounded-full flex items-center justify-center text-primary shadow-[0_4px_15px_rgba(0,0,0,0.05)] group-hover:bg-primary group-hover:text-white transition-colors duration-300">
+            <ArrowRight size={20} />
+          </div>
+          {/* Decorative shapes */}
+          <div className="absolute right-[-10%] top-[-20%] w-40 h-40 bg-white/40 rounded-full blur-2xl" />
+          <div className="absolute left-[30%] bottom-[-30%] w-32 h-32 bg-[#1BA0E2]/10 rounded-full blur-2xl" />
+        </motion.div>
+      </section>
     </motion.div>
   );
 };
@@ -665,20 +539,20 @@ const AIFinderPage = ({ spots, userLocation, locationName, onSelectSpot }: { spo
         const photos = p.photos?.slice(0, 5).map(photo => photo.getURI({ maxWidth: 800 })) || [];
         return {
           id: p.id,
-          name: p.displayName || 'Unknown Node',
-          location: p.formattedAddress?.split(',')[0] || 'Unknown Sector',
-          distance: 'SECURED_LINK',
-          vibe: p.priceLevel ? '$'.repeat(Number(p.priceLevel)) : 'NEURAL_VIBE',
+          name: p.displayName || 'Lokasi',
+          location: p.formattedAddress?.split(',')[0] || 'Tidak diketahui',
+          distance: 'Dekat',
+          vibe: 'Nyaman',
           rating: p.rating || 0,
           reviews: p.userRatingCount || 0,
           price: p.priceLevel ? '$'.repeat(Number(p.priceLevel)) : '$$',
-          openUntil: 'PROTOCOL_VARY',
+          openUntil: 'Buka',
           imageUrl: photos[0] || 'https://images.unsplash.com/photo-1501339817302-38203b9f9fef?auto=format&fit=crop&w=800&q=80',
           imageUrls: photos.length > 0 ? photos : ['https://images.unsplash.com/photo-1501339817302-38203b9f9fef?auto=format&fit=crop&w=800&q=80'],
           coordinates: { lat: p.location?.lat() || 0, lng: p.location?.lng() || 0 },
           stats: (() => {
             const { occupancy, label } = calculateOccupancy(p.rating || 0, p.userRatingCount || 0);
-            return { crowd: label, occupancy, wifi: (100 + Math.floor(Math.random() * 400)) + ' Mbps' };
+            return { crowd: label, occupancy, wifi: 'Tersedia' };
           })(),
           userReviews: [],
           googleReviews: (p as any).reviews?.map((r: any) => ({ text: r.text })) || []
@@ -692,239 +566,187 @@ const AIFinderPage = ({ spots, userLocation, locationName, onSelectSpot }: { spo
     }
   };
 
-  const chips = ["KERJA_HENING", "SANGRAIAN_GELAP", "VIBE_ESTETIK", "KOPI_MURAH"];
+  const chips = ["Kerja Tenang", "Kopi Murah", "Vibe Estetik", "Buka Malam"];
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="pt-28 pb-32 px-4 sm:px-8 max-w-4xl mx-auto space-y-16"
+      className="pt-20 pb-32 px-6 max-w-4xl mx-auto"
     >
-      <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,211,238,0.8)]" />
-          <span className="label-mono text-[9px] text-cyan-400 tracking-[0.3em]">{searching ? 'PEMINDAIAN_BERJALAN' : 'MESIN_SINTESIS_AKTIF'}</span>
+      <div className="bg-primary-container rounded-3xl p-8 mb-8 text-center shadow-sm relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+        <div className="relative z-10 flex flex-col items-center">
+          <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-md mb-4">
+            <Sparkles size={32} className="text-primary" />
+          </div>
+          <h2 className="text-2xl font-bold text-on-primary-container mb-2">Tanya AI Asisten</h2>
+          <p className="text-sm text-on-primary-container/80 max-w-xs mx-auto">Beritahu kami mood atau kebutuhanmu, dan AI akan mencarikan tempat yang pas.</p>
         </div>
-        <h2 className="text-6xl sm:text-[100px] leading-[0.75] heading-bold uppercase">Apa Mood<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-on-surface to-on-surface/20 italic">Hari_Ini?</span></h2>
       </div>
 
-      <div className="relative group">
-        <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400/20 via-pink-500/20 to-cyan-400/20 rounded-3xl blur-xl opacity-50 group-hover:opacity-100 transition duration-1000 group-hover:duration-200" />
-        <div className="relative flex flex-col sm:flex-row items-stretch bg-surface-container-high rounded-3xl overflow-hidden border border-white/5 shadow-2xl">
-          <div className="flex-1 flex items-center px-8 border-b sm:border-b-0 sm:border-r border-white/5">
-            <Sparkles size={20} className="text-cyan-400 mr-4 flex-shrink-0" />
-            <input
-              className="w-full bg-transparent border-none focus:outline-none text-lg font-bold py-8 placeholder:text-on-surface/20 uppercase appearance-none"
-              placeholder="IDENTIFIKASI_MOOD_ANDA..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            />
+      <div className="mb-6">
+        <div className="relative flex items-center bg-surface-bright rounded-2xl overflow-hidden border border-outline-variant shadow-sm p-2 focus-within:ring-2 focus-within:ring-primary/50 transition-all">
+          <div className="pl-4">
+            <Sparkles size={20} className="text-primary" />
           </div>
+          <input
+            className="flex-1 bg-transparent border-none focus:outline-none text-base py-3 px-4 text-on-surface"
+            placeholder="Contoh: Cafe outdoor yang sepi..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+          />
           <button
             onClick={handleSearch}
             disabled={searching}
-            className="bg-cyan-400 text-black px-12 py-6 font-black uppercase text-xs tracking-[0.2em] hover:bg-white active:scale-95 transition-all disabled:opacity-50"
+            className="bg-primary text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-50"
           >
-            {searching ? 'DIGESTING' : 'PINDAI'}
+            {searching ? 'Mencari...' : 'Cari'}
           </button>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-2 mb-10">
         {chips.map(c => (
           <motion.button
             key={c}
-            whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => { setQuery(c.replace('_', ' ')); handleSearch(); }}
-            className="px-6 py-3 rounded-full bg-surface-container-high border border-on-surface/5 label-mono text-[9px] hover:border-pink-500/50 hover:text-pink-500 transition-all flex items-center gap-2"
+            onClick={() => { setQuery(c); handleSearch(); }}
+            className={`px-4 py-2 rounded-full text-xs font-semibold border transition-all ${query === c ? 'bg-primary text-white border-primary shadow-sm' : 'bg-surface-bright text-on-surface-variant border-outline-variant hover:border-primary/50'}`}
           >
-            <div className={`w-1 h-1 rounded-full ${query === c.replace('_', ' ') ? 'bg-pink-500' : 'bg-on-surface/20'}`} />
             {c}
           </motion.button>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-10">
-        {(results.length > 0 ? results : spots.slice(1, 3)).map((spot, idx) => (
-          <TiltCard key={spot.id}>
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.1 }}
-              onClick={() => onSelectSpot(spot)}
-              className="group relative bg-surface-container rounded-3xl overflow-hidden border border-on-surface/5 hover:border-cyan-400/30 transition-all cursor-pointer shadow-xl hover:shadow-[0_40px_80px_rgba(0,0,0,0.6)]"
-            >
-              <div className="flex flex-col md:flex-row gap-8 p-10">
-                <div className="w-full md:w-80 aspect-[16/10] sm:aspect-auto sm:h-56 relative rounded-2xl overflow-hidden flex-shrink-0">
-                  <img src={spot.imageUrl} alt={spot.name} className="w-full h-full object-cover grayscale brightness-75 group-hover:grayscale-0 group-hover:brightness-100 group-hover:scale-105 transition-all duration-700" />
-                  <div className="absolute top-4 left-4 bg-on-surface/40 backdrop-blur-md text-surface px-4 py-1.5 label-mono !text-[10px] !font-black skew-x-[-12deg]">
-                    {spot.vibe}
+      <div className="flex flex-col gap-4">
+        {(results.length > 0 ? results : (query ? [] : spots.slice(1, 3))).map((spot, idx) => (
+          <motion.div
+            key={spot.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: idx * 0.05 }}
+            onClick={() => onSelectSpot(spot)}
+            className="bg-surface-bright rounded-2xl p-4 flex flex-col sm:flex-row gap-4 cursor-pointer hover:border-primary/50 border border-outline-variant transition-all shadow-sm group"
+          >
+            <div className="w-full sm:w-32 h-40 sm:h-32 flex-shrink-0 bg-surface-dim rounded-xl overflow-hidden relative">
+              <img src={spot.imageUrl} alt={spot.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+            </div>
+            <div className="flex-1 flex flex-col justify-between py-1">
+              <div>
+                <div className="flex justify-between items-start mb-1">
+                  <h3 className="font-bold text-lg text-on-surface line-clamp-1">{spot.name}</h3>
+                  <div className="flex items-center text-sm font-bold text-on-surface-variant gap-1">
+                    <Star size={14} className="text-yellow-500 fill-yellow-500" /> {spot.rating}
                   </div>
                 </div>
-                <div className="flex-1 flex flex-col justify-between py-2">
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-start">
-                      <h3 className="text-4xl heading-bold uppercase leading-[0.8] tracking-tighter group-hover:text-cyan-400 transition-colors hologram-text">{spot.name}</h3>
-                      <div className="text-3xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-pink-500">#{spot.rating}</div>
-                    </div>
-                    <p className="text-sm label-mono opacity-40 uppercase tracking-widest">{spot.location} // CLS_FREQ: {spot.reviews}</p>
-                  </div>
-
-                  <div className="flex items-center gap-8 pt-8 border-t border-on-surface/5">
-                    <div className="space-y-1">
-                      <span className="label-mono text-[8px] opacity-20">INFRA_STATUS</span>
-                      <div className="flex items-center gap-2">
-                        <Wifi size={14} className="text-cyan-400" />
-                        <span className="label-mono text-[9px]">ULTRA_NET</span>
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <span className="label-mono text-[8px] opacity-20">CROWD_LVL</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-pink-500 animate-pulse" />
-                        <span className="label-mono text-[9px] text-pink-500">{spot.stats.crowd}</span>
-                      </div>
-                    </div>
-                    <ArrowRight size={24} className="ml-auto opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all text-cyan-400" />
-                  </div>
+                <div className="flex items-center text-xs text-on-surface-variant mb-2">
+                  <MapPin size={12} className="mr-1" />
+                  <span className="line-clamp-1">{spot.location}</span>
                 </div>
               </div>
-            </motion.div>
-          </TiltCard>
+
+              <div className="flex items-center justify-between mt-4 sm:mt-0 pt-4 sm:pt-0 border-t sm:border-t-0 border-outline-variant">
+                <div className="flex gap-2">
+                  <span className="text-[10px] font-semibold text-primary bg-primary/10 px-2 py-1 rounded-md">{spot.price}</span>
+                  <span className="text-[10px] font-semibold text-tertiary bg-tertiary/10 px-2 py-1 rounded-md">{spot.stats.crowd}</span>
+                </div>
+                <ArrowRight size={18} className="text-primary opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
+              </div>
+            </div>
+          </motion.div>
         ))}
       </div>
     </motion.div>
   );
 };
 
-const ReviewSection = ({ spot, onAddReview }: { spot: Spot, onAddReview: (r: Review) => void }) => {
-  const [comment, setComment] = useState('');
-  const [rating, setRating] = useState(5);
-  const [submitting, setSubmitting] = useState(false);
+const ReviewSection = ({ spot }: { spot: Spot }) => {
+  const [analyzedReviews, setAnalyzedReviews] = useState<{ text: string, sentiment: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL' }[]>([]);
+  const [loadingSentiment, setLoadingSentiment] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!comment.trim()) return;
+  useEffect(() => {
+    const processReviews = async () => {
+      if (!spot.googleReviews || spot.googleReviews.length === 0) return;
 
-    setSubmitting(true);
-    const sentiment = await analyzeSentiment(comment);
-
-    const newReview: Review = {
-      id: Math.random().toString(36).substr(2, 9),
-      user: 'USR_' + Math.random().toString(36).substr(2, 4).toUpperCase(),
-      rating,
-      comment,
-      sentiment,
-      date: new Date().toISOString().split('T')[0]
+      setLoadingSentiment(true);
+      try {
+        const processed = await Promise.all(spot.googleReviews.slice(0, 4).map(async (r) => {
+          const sentiment = await analyzeSentiment(r.text);
+          return { text: r.text, sentiment };
+        }));
+        setAnalyzedReviews(processed);
+      } catch (err) {
+        console.error("Failed to analyze sentiment", err);
+        setAnalyzedReviews(spot.googleReviews.slice(0, 4).map(r => ({ text: r.text, sentiment: 'NEUTRAL' })));
+      } finally {
+        setLoadingSentiment(false);
+      }
     };
 
-    onAddReview(newReview);
-    setComment('');
-    setRating(5);
-    setSubmitting(false);
-  };
+    processReviews();
+  }, [spot.id]);
+
+  if (!spot.googleReviews || spot.googleReviews.length === 0) {
+    return (
+      <section className="pt-8 mt-8 border-t border-outline-variant">
+        <h3 className="text-xl font-bold text-on-surface mb-4">Ulasan Pengunjung</h3>
+        <div className="bg-surface-bright p-8 rounded-2xl border border-outline-variant text-center">
+          <p className="text-sm text-on-surface-variant">Belum ada ulasan untuk tempat ini.</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
-    <section className="space-y-16 pt-16 border-t border-on-surface/5">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
-        <div>
-          <span className="label-mono !text-cyan-400 block mb-2">TELEMETRI_UMPAN_BALIK</span>
-          <h3 className="text-5xl heading-bold uppercase">Log_Protokol</h3>
-        </div>
-        <div className="flex items-center gap-4 bg-surface-container px-6 py-3 rounded-full border border-on-surface/5">
-          <div className="flex gap-1">
-            {[1, 2, 3, 4, 5].map(i => <Star key={i} size={14} className={i <= Math.round(spot.rating) ? 'text-yellow-400 fill-yellow-400' : 'text-on-surface/10'} />)}
-          </div>
-          <span className="text-2xl font-black italic">{spot.rating}</span>
+    <section className="pt-8 mt-8 border-t border-outline-variant">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-xl font-bold text-on-surface">Ulasan Pengunjung</h3>
+        <div className="flex items-center gap-2 bg-yellow-50 text-yellow-700 px-3 py-1 rounded-lg">
+          <Star size={16} className="fill-current" />
+          <span className="font-bold">{spot.rating}</span>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="relative group">
-        <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400/20 to-pink-500/20 rounded-3xl blur-md opacity-20 group-hover:opacity-40 transition-all" />
-        <div className="relative space-y-12 bg-surface-container rounded-3xl p-8 sm:p-12 border border-on-surface/5 shadow-2xl">
-          <div className="space-y-6">
-            <span className="label-mono opacity-40 flex items-center gap-3">
-              <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full" />
-              INDEX_KEPUASAN_USER
-            </span>
-            <div className="flex gap-4">
-              {[1, 2, 3, 4, 5].map(s => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setRating(s)}
-                  className={`w-14 h-14 flex items-center justify-center rounded-2xl border transition-all duration-300 ${rating === s ? 'bg-cyan-400 border-cyan-400 text-black shadow-[0_0_20px_rgba(34,211,238,0.5)]' : 'border-on-surface/10 hover:bg-on-surface/5'
-                    }`}
-                >
-                  <span className="text-xl font-black">{s}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <span className="label-mono opacity-40 flex items-center gap-3">
-              <div className="w-1.5 h-1.5 bg-pink-500 rounded-full" />
-              KOMENTAR_DI_GRID
-            </span>
-            <div className="relative">
-              <textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                placeholder="DEFINISIKAN_PENGALAMAN_ANDA_DI_SINI..."
-                className="w-full bg-surface/50 border border-on-surface/10 rounded-2xl p-8 min-h-[160px] focus:outline-none focus:border-cyan-400 transition-all text-xl font-medium tracking-tight placeholder:italic placeholder:opacity-20"
-              />
-              <div className="absolute bottom-6 right-6 label-mono opacity-10 pointer-events-none">CHAR_SYNC: {comment.length}</div>
-            </div>
-          </div>
-
-          <button
-            disabled={submitting}
-            className="w-full py-6 rounded-2xl bg-on-surface text-surface label-mono !font-black !text-[14px] tracking-[0.5em] hover:bg-cyan-400 hover:text-black hover:shadow-[0_0_40px_rgba(34,211,238,0.3)] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-4"
-          >
-            {submitting ? 'SINKRONISASI_AI...' : <><Send size={18} /> UNGGAH_KE_GRID</>}
-          </button>
+      {loadingSentiment ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {[1, 2].map((i) => (
+             <div key={i} className="h-32 bg-surface-dim rounded-2xl animate-pulse" />
+          ))}
         </div>
-      </form>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-        {spot.userReviews.map((review, idx) => (
-          <motion.div
-            key={review.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.1 }}
-            className="p-8 rounded-3xl border border-on-surface/5 hover:border-cyan-400/30 transition-all bg-surface-container-low group relative overflow-hidden"
-          >
-            <div className="absolute -right-4 -top-4 w-12 h-12 bg-on-surface/5 rounded-full blur-xl group-hover:bg-cyan-400/10 transition-all" />
-            <div className="flex justify-between items-start mb-8">
-              <div className="space-y-1">
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {analyzedReviews.map((review, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.1 }}
+              className="p-5 rounded-2xl border border-outline-variant bg-surface-bright shadow-sm relative overflow-hidden"
+            >
+              <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-on-surface opacity-20 rounded-full" />
-                  <span className="label-mono !text-[11px] font-black">{review.user}</span>
+                  <div className="w-8 h-8 bg-surface-dim rounded-full flex items-center justify-center text-primary font-bold">
+                    {idx + 1}
+                  </div>
+                  <span className="text-sm font-semibold text-on-surface">Pengunjung Google</span>
                 </div>
-                <p className="label-mono opacity-20 !text-[8px] ml-4">{review.date}</p>
-              </div>
-              <div className={`px-4 py-1 label-mono !text-[9px] font-black rounded-full border ${review.sentiment === 'POSITIVE' ? 'border-cyan-400 text-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.2)]' :
-                review.sentiment === 'NEGATIVE' ? 'border-pink-500 text-pink-500' : 'border-on-surface/20 opacity-40'
+                <div className={`px-2 py-1 text-[10px] font-bold rounded-md ${
+                  review.sentiment === 'POSITIVE' ? 'bg-green-50 text-green-600 border border-green-200' :
+                  review.sentiment === 'NEGATIVE' ? 'bg-red-50 text-red-600 border border-red-200' :
+                  'bg-gray-50 text-gray-500 border border-gray-200'
                 }`}>
-                {review.sentiment}
+                  {review.sentiment === 'POSITIVE' ? 'Positif' : review.sentiment === 'NEGATIVE' ? 'Negatif' : 'Netral'}
+                </div>
               </div>
-            </div>
 
-            <p className="text-xl font-medium tracking-tight opacity-70 leading-relaxed mb-8 italic">
-              "{review.comment}"
-            </p>
-
-            <div className="flex gap-1 pt-6 border-t border-on-surface/5">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className={`h-1 flex-1 rounded-full ${i < review.rating ? 'bg-cyan-400' : 'bg-on-surface/10'}`} />
-              ))}
-            </div>
-          </motion.div>
-        ))}
-      </div>
+              <p className="text-sm font-medium text-on-surface-variant leading-relaxed line-clamp-4">
+                "{review.text}"
+              </p>
+            </motion.div>
+          ))}
+        </div>
+      )}
     </section>
   );
 };
@@ -963,12 +785,75 @@ const RouteView = ({ from, to }: { from: { lat: number, lng: number }, to: { lat
   return null;
 };
 
-const DetailPage = ({ spot, userLocation, onUpdateSpot, onBack, onShare }: { spot: Spot, userLocation: { lat: number, lng: number } | null, onUpdateSpot: (s: Spot) => void, onBack: () => void, onShare: () => void }) => {
+const SavedPage = ({ savedSpots, onSelectSpot }: { savedSpots: Spot[], onSelectSpot: (s: Spot) => void }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="pt-20 px-6 pb-32 max-w-4xl mx-auto"
+    >
+      <div className="flex flex-col gap-6 border-b border-outline-variant pb-6 mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-on-surface">Tersimpan</h2>
+          <p className="text-sm text-on-surface-variant mt-1">Daftar tempat nongkrong favoritmu.</p>
+        </div>
+      </div>
+
+      {savedSpots.length === 0 ? (
+        <div className="text-center py-20 bg-surface-bright rounded-[1.5rem] border border-outline-variant/50 shadow-sm mx-4 sm:mx-0">
+          <div className="w-20 h-20 bg-surface-dim rounded-full flex items-center justify-center mx-auto mb-5">
+            <Bookmark size={32} className="text-primary/40" />
+          </div>
+          <h3 className="text-xl font-bold text-on-surface mb-2">Belum ada yang disimpan</h3>
+          <p className="text-sm text-on-surface-variant max-w-xs mx-auto">Jelajahi tempat menarik dan tekan ikon bookmark untuk menyimpannya ke daftar ini.</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-5">
+          {savedSpots.map((spot, idx) => (
+            <motion.div
+              key={spot.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.05 }}
+              onClick={() => onSelectSpot(spot)}
+              className="premium-card p-3 flex gap-4 cursor-pointer group"
+            >
+              <div className="w-28 h-28 flex-shrink-0 bg-surface-dim rounded-xl overflow-hidden relative">
+                <img src={spot.imageUrl} alt={spot.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
+                <div className="absolute top-2 left-2 bg-white/95 backdrop-blur-md text-on-surface px-1.5 py-0.5 rounded text-[10px] font-bold shadow-sm flex items-center gap-1">
+                  <Star size={10} className="text-yellow-500 fill-yellow-500" /> {spot.rating}
+                </div>
+              </div>
+              <div className="flex-1 flex flex-col justify-between py-1.5 pr-2">
+                <div>
+                  <h3 className="font-bold text-base text-on-surface line-clamp-1 group-hover:text-primary transition-colors">{spot.name}</h3>
+                  <p className="text-xs text-on-surface-variant line-clamp-1 mt-1 font-medium flex items-center gap-1">
+                    <MapPin size={12} className="text-primary/70 flex-shrink-0" />
+                    {spot.location}
+                  </p>
+                </div>
+                <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-50">
+                  <span className="text-sm font-bold text-primary">{spot.price}</span>
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors duration-300">
+                    <Bookmark size={16} className="fill-current" />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
+    </motion.div>
+  );
+};
+
+const DetailPage = ({ spot, userLocation, onUpdateSpot, onBack, onShare, isSaved, onToggleSave }: { spot: Spot, userLocation: { lat: number, lng: number } | null, onUpdateSpot: (s: Spot) => void, onBack: () => void, onShare: () => void, isSaved: boolean, onToggleSave: (s: Spot) => void }) => {
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [extractedMenu, setExtractedMenu] = useState<{ name: string, price: number }[]>([]);
   const [insights, setInsights] = useState<{ sellingPoints: string[], weaknesses: string[] }>({
-    sellingPoints: ['Menu Lokal Autentik', 'Suasana Tenang'],
-    weaknesses: ['Area Parkir Terbatas', 'Sinyal Provider Lemah']
+    sellingPoints: ['Nyaman', 'Lokasi Strategis'],
+    weaknesses: ['Parkir Terbatas']
   });
   const [loadingMenu, setLoadingMenu] = useState(false);
 
@@ -1022,18 +907,6 @@ const DetailPage = ({ spot, userLocation, onUpdateSpot, onBack, onShare }: { spo
     fetchExtractedMenu();
   }, [spot.id]);
 
-  const handleAddReview = (newReview: Review) => {
-    const updatedReviews = [newReview, ...spot.userReviews];
-    const newRating = Number(((spot.rating * spot.reviews + newReview.rating) / (spot.reviews + 1)).toFixed(1));
-
-    onUpdateSpot({
-      ...spot,
-      userReviews: updatedReviews,
-      rating: newRating,
-      reviews: spot.reviews + 1
-    });
-  };
-
   const nextPhoto = useCallback(() => {
     setCurrentPhotoIndex((prev) => (prev + 1) % spot.imageUrls.length);
   }, [spot.imageUrls.length]);
@@ -1042,19 +915,12 @@ const DetailPage = ({ spot, userLocation, onUpdateSpot, onBack, onShare }: { spo
     setCurrentPhotoIndex((prev) => (prev - 1 + spot.imageUrls.length) % spot.imageUrls.length);
   }, [spot.imageUrls.length]);
 
-  useEffect(() => {
-    if (spot.imageUrls.length <= 1) return;
-    const interval = setInterval(nextPhoto, 5000); // Auto-advance every 5 seconds
-    return () => clearInterval(interval);
-  }, [nextPhoto]);
-
-  // Use extracted menu if available, otherwise fallback to base simulation
   const basePrice = spot.price.length * 15000 + 10000;
   const menu = extractedMenu.length > 0 ? extractedMenu : [
     { name: 'Kopi Susu Lokal', price: basePrice },
-    { name: 'Black Coffee OS', price: basePrice - 5000 },
-    { name: 'Manual Brew V60', price: basePrice + 10000 },
-    { name: 'Latte Art Node', price: basePrice + 5000 },
+    { name: 'Nasi Goreng', price: basePrice + 10000 },
+    { name: 'Kentang Goreng', price: basePrice - 5000 },
+    { name: 'Teh Manis', price: basePrice - 10000 },
   ];
 
   return (
@@ -1062,238 +928,192 @@ const DetailPage = ({ spot, userLocation, onUpdateSpot, onBack, onShare }: { spo
       initial={{ opacity: 0, x: 50 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -50 }}
-      className="bg-surface min-h-screen pb-20 overflow-x-hidden"
+      className="bg-surface min-h-screen pb-32 overflow-x-hidden"
     >
-      <header className="sticky top-0 z-50 bg-surface/80 backdrop-blur-xl border-b border-on-surface/10 px-8 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button onClick={onBack} className="text-on-surface hover:opacity-60 transition-opacity">
-            <ChevronLeft size={24} />
+      <header className="fixed top-0 left-0 w-full z-[70] glass-header px-4 h-16 flex items-center justify-between">
+        <button onClick={onBack} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-dim transition-colors text-on-surface">
+          <ChevronLeft size={24} />
+        </button>
+        <span className="font-bold text-on-surface truncate px-4">{spot.name}</span>
+        <div className="flex items-center gap-1">
+          <button onClick={onShare} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-dim transition-colors"><Share2 size={20} className="text-on-surface" /></button>
+          <button onClick={() => onToggleSave(spot)} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-dim transition-colors">
+            <Bookmark size={20} className={`transition-colors ${isSaved ? 'text-primary fill-primary' : 'text-on-surface'}`} />
           </button>
-          <span className="label-mono opacity-40 uppercase">Detail_Protokol</span>
-        </div>
-        <div className="flex items-center gap-6">
-          <button onClick={onShare} className="text-on-surface hover:bg-on-surface/5 p-2 transition-colors"><Share2 size={20} /></button>
-          <button className="text-on-surface hover:bg-on-surface/5 p-2 transition-colors"><Bookmark size={20} /></button>
         </div>
       </header>
 
-      <main className="p-4 sm:p-12 max-w-6xl mx-auto flex flex-col lg:flex-row gap-16">
-        <section className="flex-1 space-y-16">
-          {/* 3D Photo Slider */}
-          <TiltCard className="perspective-2000">
-            <motion.div
-              className="relative aspect-[16/9] group overflow-hidden rounded-3xl border border-on-surface/10 bg-surface-container shadow-[0_50px_100px_rgba(0,0,0,0.6)] preserve-3d"
-            >
-              <AnimatePresence mode="wait">
-                <motion.img
-                  key={currentPhotoIndex}
-                  src={spot.imageUrls[currentPhotoIndex]}
-                  alt={`${spot.name} - ${currentPhotoIndex + 1}`}
-                  initial={{ opacity: 0, scale: 1.2, rotateY: 20 }}
-                  animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-                  exit={{ opacity: 0, scale: 0.8, rotateY: -20 }}
-                  transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                  className="w-full h-full object-cover grayscale brightness-90 transition-all duration-700 group-hover:grayscale-0 group-hover:brightness-100"
-                />
-              </AnimatePresence>
+      <main className="max-w-4xl mx-auto pt-16">
+        {/* Photo Gallery */}
+        <section className="relative w-full aspect-video sm:aspect-[21/9] bg-surface-dim overflow-hidden shadow-sm">
+          <AnimatePresence mode="wait">
+            <motion.img
+              key={currentPhotoIndex}
+              src={spot.imageUrls[currentPhotoIndex]}
+              alt={`${spot.name} - ${currentPhotoIndex + 1}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="w-full h-full object-cover"
+            />
+          </AnimatePresence>
 
-              <div className="absolute top-6 right-6 bg-cyan-400 text-black px-6 py-2 label-mono !font-black !text-[14px] z-10 neon-glow-cyan shadow-[0_0_20px_rgba(34,211,238,0.5)]">
-                PIC_{String(currentPhotoIndex + 1).padStart(2, '0')}
-              </div>
-
-              {spot.imageUrls.length > 1 && (
-                <>
-                  <button
-                    onClick={prevPhoto}
-                    className="absolute left-6 top-1/2 -translate-y-1/2 w-14 h-14 bg-surface/20 backdrop-blur-xl text-on-surface rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-cyan-400 hover:text-black shadow-2xl border border-on-surface/10"
-                  >
-                    <ChevronLeft size={28} />
-                  </button>
-                  <button
-                    onClick={nextPhoto}
-                    className="absolute right-6 top-1/2 -translate-y-1/2 w-14 h-14 bg-surface/20 backdrop-blur-xl text-on-surface rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-cyan-400 hover:text-black shadow-2xl border border-on-surface/10"
-                  >
-                    <ArrowRight size={28} />
-                  </button>
-                </>
-              )}
-
-              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3 z-10">
-                {spot.imageUrls.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setCurrentPhotoIndex(i)}
-                    className={`h-1.5 transition-all duration-500 rounded-full ${i === currentPhotoIndex ? 'bg-cyan-400 w-12 shadow-[0_0_10px_rgba(34,211,238,0.8)]' : 'bg-white/30 w-3 hover:bg-white/50'}`}
-                  />
-                ))}
-              </div>
-            </motion.div>
-          </TiltCard>
-
-          <div className="space-y-8">
-            <div className="flex items-center gap-4">
-              <span className="label-mono !text-cyan-400 bg-cyan-400/10 px-3 py-1 rounded-sm">IDENTIFIED_LOCATION</span>
-              <div className="h-[1px] flex-1 bg-on-surface/5" />
-            </div>
-            <h2 className="text-5xl sm:text-8xl heading-bold tracking-tight uppercase leading-[0.8]">{spot.name}</h2>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 pt-8">
-              <div className="space-y-2">
-                <span className="label-mono opacity-40">System_Rating</span>
-                <p className="text-5xl font-black italic text-cyan-400">{spot.rating}<span className="text-xl opacity-20">/5.0</span></p>
-              </div>
-              <div className="space-y-2">
-                <span className="label-mono opacity-40">Cost_Scale</span>
-                <p className="text-5xl font-black italic">{spot.price}</p>
-              </div>
-              <div className="space-y-2 col-span-2">
-                <span className="label-mono opacity-40">Operation_Window</span>
-                <p className="text-2xl font-bold uppercase tracking-wider">SAMPAI_{spot.openUntil}</p>
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5, 6, 7].map(i => <div key={i} className={`h-1 flex-1 ${i < 6 ? 'bg-cyan-400/40' : 'bg-on-surface/5'}`} />)}
-                </div>
-              </div>
-            </div>
+          <div className="absolute bottom-4 right-4 bg-black/60 text-white px-3.5 py-1.5 rounded-full text-xs font-bold backdrop-blur-md shadow-lg">
+            {currentPhotoIndex + 1} / {spot.imageUrls.length}
           </div>
 
-          {/* Futuristic Menu Section */}
-          <div className="relative p-1 rounded-3xl overflow-hidden bg-gradient-to-br from-cyan-400/20 to-pink-500/20 border border-on-surface/5">
-            <div className="bg-surface p-8 sm:p-12 rounded-[inherit] space-y-12">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
-                <div>
-                  <h3 className="text-3xl heading-bold mb-2">REKAPITULASI_MENU</h3>
-                  <p className="label-mono opacity-40 flex items-center gap-2">
-                    <Zap size={14} className="text-cyan-400" />
-                    STATUS: {loadingMenu ? 'DIGESTING_DATA...' : 'ANALYSIS_COMPLETE'}
-                  </p>
-                </div>
-                <div className="bg-on-surface text-surface px-6 py-3 label-mono !font-black skew-x-[-12deg] neon-glow-cyan">
-                  {spot.price} COST_INDEX
-                </div>
-              </div>
-
-              {loadingMenu ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                  {[1, 2, 3, 4].map(i => (
-                    <div key={i} className="h-16 bg-on-surface/5 w-full rounded-xl animate-pulse" />
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-16 gap-y-8">
-                  {menu.map((item) => (
-                    <motion.div
-                      key={item.name}
-                      whileHover={{ x: 10 }}
-                      className="flex justify-between items-center group cursor-pointer border-b border-on-surface/5 pb-4"
-                    >
-                      <div className="space-y-1">
-                        <span className="text-xl font-bold uppercase group-hover:text-cyan-400 transition-colors">{item.name}</span>
-                        <div className="w-12 h-[2px] bg-cyan-400 scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
-                      </div>
-                      <span className="text-2xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-on-surface to-on-surface/40">
-                        {item.price.toLocaleString('id-ID')}
-                      </span>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-
-              <div className="pt-8 border-t border-on-surface/5 flex flex-col sm:flex-row justify-between items-center gap-4">
-                <p className="text-[10px] label-mono opacity-20 italic max-w-sm">
-                  {extractedMenu.length > 0 ? '*HASIL_SINTESIS_AI: Data diolah dari ulasan publik Google Maps.' : '*DATA_SIMULASI: Estimasi biaya berdasarkan profil tempat.'}
-                </p>
-                <button className="text-cyan-400 label-mono hover:bg-cyan-400/10 px-4 py-2 transition-all">LIHAT_KARTU_MENU_LENGKAP</button>
-              </div>
-            </div>
-          </div>
+          {spot.imageUrls.length > 1 && (
+            <>
+              <button onClick={prevPhoto} className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/20 text-white rounded-full flex items-center justify-center backdrop-blur-md hover:bg-white/40 border border-white/30 transition-all shadow-lg active:scale-95">
+                <ChevronLeft size={26} />
+              </button>
+              <button onClick={nextPhoto} className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/20 text-white rounded-full flex items-center justify-center backdrop-blur-md hover:bg-white/40 border border-white/30 transition-all shadow-lg active:scale-95">
+                <ArrowRight size={26} />
+              </button>
+            </>
+          )}
         </section>
 
+        <div className="p-6 space-y-8 -mt-6 relative z-10 bg-surface rounded-t-3xl">
+          {/* Main Info */}
+          <section className="space-y-4">
+            <div>
+              <h1 className="text-3xl font-extrabold text-on-surface drop-shadow-sm">{spot.name}</h1>
+              <div className="flex items-center gap-2 text-on-surface-variant mt-2 text-sm font-medium">
+                <MapPin size={16} className="text-primary/70" />
+                <span>{spot.location}</span>
+              </div>
+            </div>
 
-        <section className="w-full md:w-1/3 space-y-12">
-          <div className="space-y-6">
-            <span className="label-mono opacity-40">Data_Lingkungan_Langsung</span>
-            <div className="grid grid-cols-1 gap-4">
-              <div className="p-8 border-2 border-on-surface bg-on-surface text-surface group relative overflow-hidden">
-                <div className="absolute -right-4 -top-4 w-20 h-20 bg-surface/5 rounded-full blur-2xl" />
-                <span className="label-mono !text-surface/40 block mb-6">TINGKAT_KETERISIAN</span>
-                <div className="flex items-end gap-3 translate-x-[-4px]">
-                  <span className="text-6xl font-black heading-bold">{spot.stats.occupancy}%</span>
-                  <span className="label-mono !text-surface/60 pb-2">KONDISI_{spot.stats.crowd.toUpperCase()}</span>
+            <div className="flex flex-wrap gap-4 py-4 border-y border-outline-variant">
+              <div className="flex items-center gap-2">
+                <Star size={20} className="text-yellow-500 fill-yellow-500 drop-shadow-sm" />
+                <span className="font-bold text-on-surface text-lg">{spot.rating}</span>
+                <span className="text-on-surface-variant text-sm font-medium">({spot.reviews} ulasan)</span>
+              </div>
+              <div className="w-px h-6 bg-outline-variant hidden sm:block"></div>
+              <div className="flex items-center gap-2 text-primary text-sm font-bold">
+                <span className="bg-primary/10 px-2.5 py-1 rounded-md">{spot.price}</span>
+              </div>
+              <div className="w-px h-6 bg-outline-variant hidden sm:block"></div>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="font-bold text-tertiary">Buka</span>
+                <span className="text-on-surface-variant font-medium">hingga {spot.openUntil}</span>
+              </div>
+            </div>
+          </section>
+
+          {/* Action Buttons */}
+          <section className="flex gap-4">
+            <button
+              onClick={() => {
+                if (userLocation) {
+                  const url = `https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lng}&destination=${spot.coordinates.lat},${spot.coordinates.lng}&travelmode=driving`;
+                  window.open(url, '_blank');
+                } else {
+                  alert("Lokasi Anda belum tersedia.");
+                }
+              }}
+              className="flex-1 bg-gradient-to-r from-primary to-[#0E84C3] text-white py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:shadow-[0_8px_20px_rgba(27,160,226,0.3)] transition-all active:scale-95 shadow-md"
+            >
+              <MapIcon size={18} /> Rute
+            </button>
+            <button
+              onClick={() => alert(`Reservasi meja di ${spot.name} berhasil diajukan!`)}
+              className="flex-1 bg-white text-primary border border-primary/30 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-primary/5 hover:border-primary/50 transition-all active:scale-95 shadow-[0_4px_15px_rgba(0,0,0,0.02)]"
+            >
+              <Sparkles size={18} /> Reservasi Meja
+            </button>
+          </section>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="md:col-span-2 space-y-8">
+              {/* Menu Section */}
+              <section className="premium-card p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-bold text-on-surface">Menu Populer</h3>
+                  {loadingMenu && <span className="text-xs text-primary animate-pulse">Memuat...</span>}
+                </div>
+
+                <div className="space-y-4">
+                  {menu.map((item, i) => (
+                    <div key={i} className="flex justify-between items-center border-b border-outline-variant pb-3 last:border-0 last:pb-0">
+                      <span className="font-semibold text-on-surface">{item.name}</span>
+                      <span className="font-bold text-primary">Rp {item.price.toLocaleString('id-ID')}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* Review Form Component */}
+              <ReviewSection spot={spot} />
+            </div>
+
+            <div className="space-y-6">
+              {/* Info Cards */}
+              <div className="bg-surface-bright rounded-2xl p-6 border border-outline-variant shadow-sm space-y-4">
+                <h3 className="text-base font-bold text-on-surface">Kondisi Saat Ini</h3>
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-full border-4 border-tertiary flex items-center justify-center text-xl font-bold text-on-surface">
+                    {spot.stats.occupancy}%
+                  </div>
+                  <div>
+                    <p className="font-bold text-tertiary">{spot.stats.crowd}</p>
+                    <p className="text-xs text-on-surface-variant">Tingkat keramaian</p>
+                  </div>
                 </div>
               </div>
-              <div className="p-8 border border-on-surface/10 bg-surface-container space-y-6">
+
+              {/* Highlights */}
+              <div className="bg-surface-bright rounded-2xl p-6 border border-outline-variant shadow-sm space-y-4">
                 <div>
-                  <span className="label-mono text-cyan-400 block mb-4">FOCUS_AREA // PRODUK_UTAMA</span>
+                  <h4 className="text-sm font-bold text-on-surface mb-2 flex items-center gap-2"><Sparkles size={14} className="text-primary"/> Keunggulan</h4>
                   <div className="flex flex-wrap gap-2">
                     {insights.sellingPoints.map((item, i) => (
-                      <span key={i} className="label-mono !text-[10px] bg-cyan-400/10 text-cyan-400 px-3 py-1 border border-cyan-400/20">{item.toUpperCase()}</span>
+                      <span key={i} className="text-xs font-semibold bg-primary/10 text-primary px-2 py-1 rounded-md">{item}</span>
                     ))}
                   </div>
                 </div>
-                <div className="pt-4 border-t border-on-surface/5">
-                  <span className="label-mono text-pink-500 block mb-4">SYSTEM_WARNING // KELEMAHAN</span>
+                <div className="pt-4 border-t border-outline-variant">
+                  <h4 className="text-sm font-bold text-on-surface mb-2">Kekurangan</h4>
                   <div className="flex flex-wrap gap-2">
                     {insights.weaknesses.map((item, i) => (
-                      <span key={i} className="label-mono !text-[10px] bg-pink-500/10 text-pink-500 px-3 py-1 border border-pink-500/20">{item.toUpperCase()}</span>
+                      <span key={i} className="text-xs font-semibold bg-surface-dim text-on-surface-variant px-2 py-1 rounded-md">{item}</span>
                     ))}
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
 
-          <div className="space-y-6">
-            <span className="label-mono opacity-40">Posisi_Geo & Rute</span>
-            <div className="aspect-square bg-surface-container border border-on-surface/10 relative overflow-hidden">
-              {hasValidKey ? (
-                <Map
-                  defaultCenter={spot.coordinates}
-                  defaultZoom={14}
-                  mapId="DETAIL_MAP_ID"
-                  disableDefaultUI={true}
-                  gestureHandling={'greedy'}
-                  style={{ width: '100%', height: '100%' }}
-                >
-                  <AdvancedMarker position={spot.coordinates} />
-                  {/* Penanda Posisi User */}
-                  {userLocation && (
-                    <AdvancedMarker position={userLocation}>
-                      <div className="relative flex items-center justify-center">
-                        <div className="absolute w-8 h-8 bg-cyan-400/30 rounded-full animate-ping" />
-                        <div className="w-4 h-4 bg-cyan-400 rounded-full border-2 border-white shadow-[0_0_15px_rgba(34,211,238,0.8)]" />
-                      </div>
-                    </AdvancedMarker>
-                  )}
-                  {userLocation && <RouteView from={userLocation} to={spot.coordinates} />}
-                </Map>
-              ) : (
-                <div className="w-full h-full flex items-center justify-center label-mono opacity-20 text-[10px]">
-                  MAP_SYNC_REQUIRED
-                </div>
-              )}
+              {/* Map View */}
+              <div className="bg-surface-bright rounded-2xl overflow-hidden border border-outline-variant shadow-sm aspect-square">
+                {hasValidKey ? (
+                  <Map
+                    defaultCenter={spot.coordinates}
+                    defaultZoom={15}
+                    mapId="DETAIL_MAP_ID"
+                    disableDefaultUI={true}
+                    gestureHandling={'greedy'}
+                    style={{ width: '100%', height: '100%' }}
+                  >
+                    <AdvancedMarker position={spot.coordinates} />
+                    {userLocation && (
+                      <AdvancedMarker position={userLocation}>
+                        <div className="w-4 h-4 bg-primary rounded-full border-2 border-white shadow-md" />
+                      </AdvancedMarker>
+                    )}
+                    {userLocation && <RouteView from={userLocation} to={spot.coordinates} />}
+                  </Map>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-xs text-on-surface-variant bg-surface-dim">
+                    Peta tidak tersedia
+                  </div>
+                )}
+              </div>
             </div>
-            <p className="text-sm font-medium italic opacity-60 leading-snug">\"Menghitung rute optimal dari posisi Anda ke titik {spot.name}.\"</p>
           </div>
-        </section>
+        </div>
       </main>
-
-      <div className="fixed bottom-12 left-1/2 -translate-x-1/2 w-full px-12 z-[60] max-w-5xl">
-        <button
-          onClick={() => {
-            if (userLocation) {
-              const url = `https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lng}&destination=${spot.coordinates.lat},${spot.coordinates.lng}&travelmode=driving`;
-              window.open(url, '_blank');
-            } else {
-              alert("SINKRONISASI_GPS_BELUM_SIAP");
-            }
-          }}
-          className="w-full h-20 bg-on-surface text-surface heading-bold text-lg tracking-[0.4em] flex items-center justify-center gap-4 hover:opacity-90 active:translate-y-1 transition-all"
-        >
-          MULAI_NAVIGASI <ArrowRight size={24} />
-        </button>
-      </div>
-
-      <ReviewSection spot={spot} onAddReview={handleAddReview} />
     </motion.div>
   );
 };
@@ -1391,7 +1211,6 @@ const SpotsPage = ({ spots, userLocation, onSelectSpot }: { spots: Spot[], userL
   useEffect(() => {
     const getRecommendations = async () => {
       if (!placesLib || !userLocation) {
-        // Fallback to existing spots if no user location
         setRecommendations(spots.slice(0, 5));
         return;
       }
@@ -1408,19 +1227,19 @@ const SpotsPage = ({ spots, userLocation, onSelectSpot }: { spots: Spot[], userL
           const photos = p.photos?.slice(0, 5).map(photo => photo.getURI({ maxWidth: 800 })) || [];
           return {
             id: p.id,
-            name: p.displayName || 'Unknown Node',
-            location: p.formattedAddress?.split(',')[0] || 'Unknown Sector',
-            distance: 'REC_SYNC',
+            name: p.displayName || 'Lokasi',
+            location: p.formattedAddress?.split(',')[0] || 'Tidak diketahui',
+            distance: 'Dekat',
             rating: p.rating || 0,
             reviews: p.userRatingCount || 0,
             price: p.priceLevel ? '$'.repeat(Number(p.priceLevel)) : '$$',
-            openUntil: 'PROTOCOL_VARY',
+            openUntil: 'Buka',
             imageUrl: photos[0] || 'https://images.unsplash.com/photo-1501339817302-38203b9f9fef?auto=format&fit=crop&w=400&q=80',
             imageUrls: photos.length > 0 ? photos : ['https://images.unsplash.com/photo-1501339817302-38203b9f9fef?auto=format&fit=crop&w=400&q=80'],
             coordinates: { lat: p.location?.lat() || 0, lng: p.location?.lng() || 0 },
             stats: (() => {
               const { occupancy, label } = calculateOccupancy(p.rating || 0, p.userRatingCount || 0);
-              return { crowd: label, occupancy, wifi: 'SYNC_STABLE' };
+              return { crowd: label, occupancy, wifi: 'Tersedia' };
             })(),
             userReviews: [],
             googleReviews: (p as any).reviews?.map((r: any) => ({ text: r.text })) || []
@@ -1442,31 +1261,26 @@ const SpotsPage = ({ spots, userLocation, onSelectSpot }: { spots: Spot[], userL
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="pt-24 px-4 sm:px-8 pb-32 max-w-6xl mx-auto space-y-16"
+      className="pt-20 px-6 pb-32 max-w-4xl mx-auto"
     >
-      <div className="flex flex-col sm:flex-row justify-between items-end gap-6 border-b border-on-surface/5 pb-12">
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-2 h-2 bg-cyan-400 rounded-full neon-glow-cyan animate-pulse" />
-            <span className="label-mono opacity-40">System_Interface_0.4</span>
-          </div>
-          <h2 className="text-6xl sm:text-8xl heading-bold tracking-tighter uppercase leading-[0.8]">Titik_Lokal</h2>
+      <div className="flex flex-col gap-6 border-b border-outline-variant pb-6 mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-on-surface">Eksplor Tempat</h2>
+          <p className="text-sm text-on-surface-variant mt-1">Temukan spot nongkrong terbaik di sekitarmu.</p>
         </div>
 
-        <div className="flex p-1 bg-surface-container rounded-full border border-on-surface/10 perspective-1000">
+        <div className="flex p-1 bg-surface-dim rounded-full w-full max-w-[240px]">
           <button
             onClick={() => setViewMode('list')}
-            className={`px-8 py-3 rounded-full flex items-center gap-2 transition-all duration-500 ${viewMode === 'list' ? 'bg-on-surface text-surface shadow-[0_10px_20px_rgba(0,0,0,0.4)]' : 'opacity-40 hover:opacity-100'}`}
+            className={`flex-1 py-2 rounded-full flex items-center justify-center gap-2 transition-all text-xs font-bold ${viewMode === 'list' ? 'bg-white text-primary shadow-sm' : 'text-on-surface-variant hover:text-primary'}`}
           >
-            <List size={16} />
-            <span className="label-mono !text-[10px] font-black">LIST_VIEW</span>
+            <List size={16} /> Daftar
           </button>
           <button
             onClick={() => setViewMode('map')}
-            className={`px-8 py-3 rounded-full flex items-center gap-2 transition-all duration-500 ${viewMode === 'map' ? 'bg-on-surface text-surface shadow-[0_10px_20px_rgba(0,0,0,0.4)]' : 'opacity-40 hover:opacity-100'}`}
+            className={`flex-1 py-2 rounded-full flex items-center justify-center gap-2 transition-all text-xs font-bold ${viewMode === 'map' ? 'bg-white text-primary shadow-sm' : 'text-on-surface-variant hover:text-primary'}`}
           >
-            <MapIcon size={16} />
-            <span className="label-mono !text-[10px] font-black">MAP_OS</span>
+            <MapIcon size={16} /> Peta
           </button>
         </div>
       </div>
@@ -1478,80 +1292,79 @@ const SpotsPage = ({ spots, userLocation, onSelectSpot }: { spots: Spot[], userL
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="space-y-20"
+            className="space-y-8"
           >
-            {/* Recommendations Sub-section */}
+            {/* Recommendations Section */}
             <section>
-              <div className="flex items-center justify-between mb-8">
-                <span className="label-mono !text-pink-500">REKOMENDASI_UNTUK_ANDA</span>
-                <span className="label-mono opacity-20 text-[8px]">NEARBY_SCAN: ACTIVE</span>
-              </div>
-              <div className="flex gap-8 overflow-x-auto pb-10 scrollbar-hide snap-x perspective-1000">
+              <h3 className="text-lg font-bold text-on-surface mb-4">Mungkin Kamu Suka</h3>
+              <div className="flex gap-5 overflow-x-auto pb-6 scrollbar-hide snap-x -mx-6 px-6">
                 {recommendations.map((s, idx) => (
-                  <TiltCard key={s.id} className="flex-shrink-0 w-80 snap-center">
-                    <motion.div
-                      onClick={() => onSelectSpot(s)}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: idx * 0.1 }}
-                      className="rounded-2xl overflow-hidden bg-surface-container border border-on-surface/5 hover:border-cyan-400/30 transition-all cursor-pointer group"
-                    >
-                      <div className="relative h-44">
-                        <img src={s.imageUrl} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" />
-                        <div className="absolute top-4 right-4 bg-cyan-400 text-black px-2 py-1 label-mono !text-[10px] !font-black">
-                          {s.rating}★
-                        </div>
+                  <motion.div
+                    key={s.id}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => onSelectSpot(s)}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: idx * 0.1 }}
+                    className="flex-shrink-0 w-64 snap-start premium-card cursor-pointer group overflow-hidden"
+                  >
+                    <div className="relative h-40">
+                      <img src={s.imageUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
+                      <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md text-on-surface px-2 py-1 rounded-lg text-xs font-bold shadow-sm flex items-center gap-1.5">
+                        <Star size={12} className="text-yellow-500 fill-yellow-500" /> {s.rating}
                       </div>
-                      <div className="p-6">
-                        <h4 className="heading-bold text-lg mb-1 truncate hologram-text">{s.name}</h4>
-                        <p className="label-mono opacity-40 text-[9px] mb-4">{s.location}</p>
-                        <div className="flex justify-between items-center">
-                          <span className="label-mono !text-pink-500">{s.price}</span>
-                          <ArrowRight size={16} className="text-cyan-400 translate-x-[-10px] opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all" />
-                        </div>
+                    </div>
+                    <div className="p-4 space-y-2">
+                      <h4 className="font-bold text-base mb-1 truncate text-on-surface group-hover:text-primary transition-colors">{s.name}</h4>
+                      <div className="flex items-center text-on-surface-variant text-xs gap-1.5 mb-2 font-medium">
+                        <MapPin size={14} className="text-primary/70" />
+                        <span className="truncate">{s.location}</span>
                       </div>
-                    </motion.div>
-                  </TiltCard>
+                      <div className="flex justify-between items-center pt-2 mt-1 border-t border-gray-50">
+                        <span className="text-sm font-bold text-primary">{s.price}</span>
+                        <ArrowRight size={16} className="text-primary opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                      </div>
+                    </div>
+                  </motion.div>
                 ))}
               </div>
             </section>
 
             {/* List Header */}
-            <div className="flex items-center gap-4">
-              <span className="label-mono opacity-40">DATABASE_PENGGUNA // LENGKAP</span>
-              <div className="h-[1px] flex-1 bg-on-surface/5" />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-              {spots.map((s, idx) => (
-                <TiltCard key={s.id}>
+            <div>
+              <h3 className="text-lg font-bold text-on-surface mb-4">Semua Tempat</h3>
+              <div className="flex flex-col gap-5">
+                {spots.map((s, idx) => (
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
+                    key={s.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.05 }}
                     onClick={() => onSelectSpot(s)}
-                    className="group relative bg-surface-container rounded-3xl p-8 flex gap-8 cursor-pointer hover:border-cyan-400/50 border border-on-surface/5 transition-all shadow-xl hover:shadow-[0_30px_60px_rgba(0,0,0,0.5)] overflow-hidden"
+                    className="premium-card p-3 flex gap-4 cursor-pointer group"
                   >
-                    <div className="absolute -right-32 -bottom-32 w-64 h-64 bg-cyan-400/5 rounded-full blur-[80px] group-hover:bg-cyan-400/10 transition-all" />
-                    <div className="w-32 h-32 flex-shrink-0 bg-surface rounded-2xl overflow-hidden border border-on-surface/5">
-                      <img src={s.imageUrl} className="w-full h-full object-cover grayscale brightness-90 group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700" />
-                    </div>
-                    <div className="flex-1 flex flex-col justify-between">
-                      <div>
-                        <div className="flex justify-between items-start mb-2">
-                          <h3 className="heading-bold text-3xl leading-[0.8] uppercase hologram-text">{s.name}</h3>
-                          <span className="text-xl font-black italic text-cyan-400">#{s.rating}</span>
-                        </div>
-                        <p className="label-mono opacity-40 text-[9px] mb-4">{s.location} // {s.distance}</p>
+                    <div className="w-28 h-28 flex-shrink-0 bg-surface-dim rounded-xl overflow-hidden relative">
+                      <img src={s.imageUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
+                      <div className="absolute top-2 left-2 bg-white/95 backdrop-blur-md text-on-surface px-1.5 py-0.5 rounded text-[10px] font-bold shadow-sm flex items-center gap-1">
+                        <Star size={10} className="text-yellow-500 fill-yellow-500" /> {s.rating}
                       </div>
-                      <div className="flex items-center justify-between border-t border-on-surface/5 pt-4">
-                        <span className="label-mono !text-[8px] bg-on-surface/5 px-2 py-1">{s.price}</span>
-                        <ArrowRight size={18} className="opacity-0 translate-x-[-10px] group-hover:opacity-100 group-hover:translate-x-0 transition-all text-cyan-400" />
+                    </div>
+                    <div className="flex-1 flex flex-col justify-between py-1.5 pr-2">
+                      <div>
+                        <h3 className="font-bold text-base text-on-surface line-clamp-1 group-hover:text-primary transition-colors">{s.name}</h3>
+                        <p className="text-xs text-on-surface-variant line-clamp-1 mt-1 font-medium flex items-center gap-1">
+                          <MapPin size={12} className="text-primary/70 flex-shrink-0" />
+                          {s.location}
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-50">
+                        <span className="text-sm font-bold text-primary">{s.price}</span>
+                        <span className="text-[10px] font-bold text-tertiary bg-tertiary/10 px-2.5 py-1 rounded-full">{s.stats.crowd}</span>
                       </div>
                     </div>
                   </motion.div>
-                </TiltCard>
-              ))}
+                ))}
+              </div>
             </div>
           </motion.div>
         ) : (
@@ -1560,7 +1373,7 @@ const SpotsPage = ({ spots, userLocation, onSelectSpot }: { spots: Spot[], userL
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="w-full rounded-3xl overflow-hidden border border-on-surface/10 shadow-2xl"
+            className="w-full h-[60vh] rounded-2xl overflow-hidden border border-outline-variant shadow-sm"
           >
             <MapView spots={spots} userLocation={userLocation} onSelectSpot={onSelectSpot} />
           </motion.div>
@@ -1575,8 +1388,20 @@ export default function App() {
   const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
   const [spots, setSpots] = useState<Spot[]>(MOCK_SPOTS);
   const [userLocation, setUserLocation] = useState<{ lat: number, lng: number } | null>(null);
-  const [locationName, setLocationName] = useState<string>('MENYINGKRONKAN...');
+  const [locationName, setLocationName] = useState<string>('Mencari Lokasi...');
   const [shareStatus, setShareStatus] = useState<string | null>(null);
+  const [savedSpots, setSavedSpots] = useState<Spot[]>([]);
+
+  const handleToggleSave = (spot: Spot) => {
+    setSavedSpots(prev => {
+      const isCurrentlySaved = prev.some(s => s.id === spot.id);
+      if (isCurrentlySaved) {
+        return prev.filter(s => s.id !== spot.id);
+      } else {
+        return [...prev, spot];
+      }
+    });
+  };
 
   // Deep linking and URL sync
   useEffect(() => {
@@ -1619,9 +1444,58 @@ export default function App() {
 
   useEffect(() => {
     if (!("geolocation" in navigator)) {
-      setLocationName('GEO_NOT_SUPPORTED');
+      setLocationName('Akses Lokasi Tidak Tersedia');
       return;
     }
+
+    const resolveLocationName = async (lat: number, lng: number) => {
+      // 1. Try Google Maps Geocoder if available
+      if ((window as any).google && (window as any).google.maps) {
+        const geocoder = new (window as any).google.maps.Geocoder();
+        try {
+          const response = await new Promise<any>((resolve, reject) => {
+            geocoder.geocode({ location: { lat, lng } }, (results: any, status: any) => {
+              if (status === 'OK' && results[0]) resolve(results);
+              else reject(status);
+            });
+          });
+
+          if (response && response[0]) {
+            const comps = response[0].address_components;
+            const cityComp = comps.find((c: any) => c.types.includes('locality')) ||
+                             comps.find((c: any) => c.types.includes('administrative_area_level_2'));
+
+            if (cityComp) {
+              const cityName = cityComp.long_name
+                .replace(/Kabupaten /i, '')
+                .replace(/Kota /i, '');
+              setLocationName(cityName);
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn('Google Maps Geocoding failed, trying fallback...', e);
+        }
+      }
+
+      // 2. Fallback to OpenStreetMap Nominatim
+      try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10`);
+        const data = await response.json();
+        if (data && data.address) {
+          const city = data.address.city || data.address.town || data.address.county || data.address.state;
+          if (city) {
+            setLocationName(city.replace(/Kabupaten /i, '').replace(/Kota /i, ''));
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('OSM Geocoding failed.', e);
+      }
+
+      // 3. Final Fallback to coordinates
+      setLocationName(`Kordinat: ${lat.toFixed(2)}, ${lng.toFixed(2)}`);
+    };
 
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
@@ -1630,34 +1504,12 @@ export default function App() {
           lng: position.coords.longitude
         };
         setUserLocation(coords);
-
-        // Use Google Maps Geocoder instead of fetch to avoid CORS
-        if ((window as any).google && (window as any).google.maps) {
-          const geocoder = new (window as any).google.maps.Geocoder();
-          geocoder.geocode({ location: coords }, (results: any, status: any) => {
-            if (status === 'OK' && results[0]) {
-              const comps = results[0].address_components;
-              const cityComp = comps.find((c: any) => c.types.includes('locality')) || 
-                               comps.find((c: any) => c.types.includes('administrative_area_level_2'));
-              
-              const cityName = cityComp ? cityComp.long_name.toUpperCase()
-                .replace('KABUPATEN ', '')
-                .replace('KOTA ', '') : 'GRID_AKTIF';
-                
-              setLocationName(cityName + '.OS');
-            } else {
-              setLocationName('GRID_AKTIF.OS');
-            }
-          });
-        } else {
-          // Fallback if google maps not loaded yet
-          setLocationName(`LAT_${coords.lat.toFixed(2)}_LNG_${coords.lng.toFixed(2)}`);
-        }
+        resolveLocationName(coords.lat, coords.lng);
       },
       (error) => {
         console.error("GPS_SYNC_FAILURE", error);
         if (!userLocation) {
-          setLocationName('SIGNAL_LOST.OS');
+          setLocationName('Lokasi Tidak Ditemukan');
         }
       },
       { 
@@ -1672,8 +1524,8 @@ export default function App() {
 
   // Force update location name if geocoding is stuck but we have coordinates
   useEffect(() => {
-    if (userLocation && locationName === 'MENYINGKRONKAN...') {
-      setLocationName(`LAT_${userLocation.lat.toFixed(2)}_LNG_${userLocation.lng.toFixed(2)}`);
+    if (userLocation && locationName === 'Mencari Lokasi...') {
+      setLocationName(`Kordinat: ${userLocation.lat.toFixed(2)}, ${userLocation.lng.toFixed(2)}`);
     }
   }, [userLocation, locationName]);
 
@@ -1714,36 +1566,36 @@ export default function App() {
 
   return (
     <APIProvider apiKey={MAP_KEY || 'MISSING_KEY'} version="weekly">
-      <Scene3D />
-      
       {/* Share Status Notification */}
       <AnimatePresence>
         {shareStatus && (
           <motion.div
-            initial={{ opacity: 0, y: 50, rotateX: 45 }}
-            animate={{ opacity: 1, y: 0, rotateX: 0 }}
-            exit={{ opacity: 0, y: 50, rotateX: 45 }}
-            className="fixed bottom-24 sm:bottom-12 left-1/2 -translate-x-1/2 z-[100] bg-cyan-400 text-black px-8 py-3 label-mono font-black italic shadow-[0_20px_50px_rgba(34,211,238,0.4)] skew-x-[-12deg]"
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed bottom-24 sm:bottom-20 left-1/2 -translate-x-1/2 z-[100] bg-primary text-white px-6 py-3 rounded-full text-sm font-bold shadow-lg flex items-center gap-2"
           >
-            {shareStatus === 'LINK_DISALIN' ? '📋 LINK_DISALIN' : '✅ BERHASIL_DIBAGIKAN'}
+            {shareStatus === 'LINK_DISALIN' ? '📋 Tautan Disalin' : '✅ Berhasil Dibagikan'}
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="min-h-screen bg-transparent font-sans text-on-surface select-none perspective-2000">
+      <div className="min-h-screen bg-surface font-sans text-on-surface select-none">
         {!userLocation && (
-          <div className="fixed inset-0 z-[100] bg-surface flex flex-col items-center justify-center space-y-8">
-            <motion.div
-              animate={{ 
-                rotateY: 360,
-                translateZ: [0, 100, 0]
-              }}
-              transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-              className="w-24 h-24 border-t-4 border-cyan-400 rounded-full shadow-[0_0_50px_rgba(34,211,238,0.5)] preserve-3d"
-            />
-            <div className="text-center space-y-2">
-              <h1 className="heading-bold text-3xl tracking-[0.4em] hologram-text">MENCARI_SANYAL_GPS</h1>
-              <p className="label-mono opacity-40">HARAP_BERIKAN_IZIN_LOKASI_UNTUK_SINKRONISASI_GRID</p>
+          <div className="fixed inset-0 z-[100] bg-surface-bright flex flex-col items-center justify-center space-y-6">
+            <div className="relative">
+              <motion.div
+                animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
+                transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                className="absolute inset-0 bg-primary/20 rounded-full"
+              />
+              <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center text-white shadow-lg relative z-10">
+                <MapPin size={36} />
+              </div>
+            </div>
+            <div className="text-center space-y-2 max-w-xs px-4">
+              <h1 className="text-2xl font-bold text-on-surface">Mencari Lokasi</h1>
+              <p className="text-sm text-on-surface-variant">Harap berikan izin akses lokasi agar kami bisa merekomendasikan tempat terbaik di sekitarmu.</p>
             </div>
           </div>
         )}
@@ -1773,6 +1625,7 @@ export default function App() {
                 <SpotsPage spots={spots} userLocation={userLocation} onSelectSpot={handleSelectSpot} />
               )}
               {currentPage === 'ai-finder' && <AIFinderPage spots={spots} userLocation={userLocation} locationName={locationName} onSelectSpot={handleSelectSpot} />}
+              {currentPage === 'saved' && <SavedPage savedSpots={savedSpots} onSelectSpot={handleSelectSpot} />}
               {currentPage === 'detail' && selectedSpot && (
                 <DetailPage
                   spot={spots.find(s => s.id === selectedSpot.id) || selectedSpot}
@@ -1783,6 +1636,8 @@ export default function App() {
                     setCurrentPage('radar');
                   }}
                   onShare={handleShare}
+                  isSaved={savedSpots.some(s => s.id === selectedSpot.id)}
+                  onToggleSave={handleToggleSave}
                 />
               )}
             </motion.div>

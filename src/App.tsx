@@ -238,10 +238,10 @@ function getDistance(l1: { lat: number, lng: number }, l2: { lat: number, lng: n
 // --- Components ---
 
 const TopAppBar = ({ onNavigateToAI }: { onNavigateToAI: () => void }) => (
-  <header className="fixed top-0 left-0 w-full z-[60] bg-surface-bright/90 backdrop-blur-md border-b border-outline-variant h-16 shadow-sm">
+  <header className="fixed top-0 left-0 w-full z-[60] glass-header h-16">
     <div className="flex justify-between items-center max-w-5xl mx-auto px-6 h-full text-on-surface">
       <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded bg-primary flex items-center justify-center">
+        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-[#0E84C3] flex items-center justify-center shadow-md">
           <MapPin size={18} className="text-white" />
         </div>
         <span className="heading-bold text-xl text-primary tracking-tight">NongkrongYuk</span>
@@ -249,7 +249,7 @@ const TopAppBar = ({ onNavigateToAI }: { onNavigateToAI: () => void }) => (
       <div className="flex items-center gap-4">
         <button 
           onClick={onNavigateToAI}
-          className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold hover:bg-primary/20 transition-all active:scale-95"
+          className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold hover:bg-primary hover:text-white transition-all duration-300 active:scale-95 shadow-sm"
         >
           <Sparkles size={16} />
           <span>Tanya AI</span>
@@ -268,7 +268,7 @@ const BottomNavBar = ({ activePage, setActivePage }: { activePage: Page, setActi
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 w-full z-[60] bg-surface-bright border-t border-outline-variant pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+    <nav className="fixed bottom-0 left-0 w-full z-[60] glass-nav pb-safe">
       <div className="flex justify-around items-center h-16 max-w-md mx-auto px-2">
         {tabs.map((tab) => {
           const isActive = activePage === tab.id;
@@ -452,22 +452,25 @@ const HomePage = ({ spots, userLocation, locationName, setLocationName, onSelect
       className="pt-20 pb-24 max-w-4xl mx-auto overflow-x-hidden"
     >
       {/* Hero Header Section */}
-      <section className="px-6 py-6 bg-gradient-to-b from-primary to-primary-container text-white rounded-b-3xl shadow-sm mb-6">
-        <div className="flex flex-col gap-4">
+      <section className="px-6 py-8 hero-gradient text-white rounded-b-[2.5rem] shadow-lg mb-8 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4"></div>
+
+        <div className="flex flex-col gap-5 relative z-10">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm opacity-90 font-medium">Lokasi Anda</p>
-              <h1 className="text-2xl font-bold tracking-tight">{locationName.replace('.OS', '')}</h1>
+              <p className="text-sm opacity-90 font-medium mb-1">Lokasi Anda</p>
+              <h1 className="text-3xl font-bold tracking-tight drop-shadow-sm">{locationName.replace('.OS', '')}</h1>
             </div>
           </div>
 
           <div className="relative mt-2">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <MapPin size={18} className="text-on-surface-variant" />
+              <MapPin size={18} className="text-gray-400" />
             </div>
             <input
               type="text"
-              className="w-full bg-white text-on-surface rounded-xl py-3.5 pl-11 pr-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm font-medium"
+              className="w-full bg-white text-on-surface rounded-2xl py-4 pl-12 pr-4 shadow-[0_8px_30px_rgba(0,0,0,0.12)] focus:outline-none focus:ring-4 focus:ring-white/40 text-sm font-medium transition-all"
               placeholder="Cari tempat nongkrong..."
             />
           </div>
@@ -475,9 +478,9 @@ const HomePage = ({ spots, userLocation, locationName, setLocationName, onSelect
       </section>
 
       {/* Category Categories */}
-      <section className="px-6 mb-8">
-        <h2 className="text-lg font-bold text-on-surface mb-4">Kategori</h2>
-        <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
+      <section className="px-6 mb-10">
+        <h2 className="text-lg font-bold text-on-surface mb-5">Kategori</h2>
+        <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 -mx-6 px-6">
           {categories.map((cat) => {
             const Icon = cat.icon;
             const isActive = activeCategory === cat.id;
@@ -485,12 +488,12 @@ const HomePage = ({ spots, userLocation, locationName, setLocationName, onSelect
               <button
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
-                className={`flex flex-col items-center gap-2 min-w-[70px] ${isActive ? 'opacity-100' : 'opacity-70 hover:opacity-100'}`}
+                className={`flex flex-col items-center gap-3 min-w-[72px] transition-all duration-300 ${isActive ? 'opacity-100' : 'opacity-80 hover:opacity-100 hover:-translate-y-1'}`}
               >
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm transition-all ${isActive ? 'bg-primary text-white shadow-primary/30 scale-105' : 'bg-surface-bright text-primary border border-outline-variant'}`}>
-                  <Icon size={24} />
+                <div className={`w-16 h-16 rounded-[1.25rem] flex items-center justify-center transition-all duration-300 ${isActive ? 'bg-gradient-to-br from-primary to-[#0E84C3] text-white shadow-[0_8px_20px_rgba(27,160,226,0.4)] scale-105' : 'bg-white text-primary shadow-[0_4px_15px_rgba(0,0,0,0.05)] border border-gray-50'}`}>
+                  <Icon size={26} strokeWidth={isActive ? 2.5 : 2} />
                 </div>
-                <span className={`text-xs font-semibold ${isActive ? 'text-primary' : 'text-on-surface-variant'}`}>{cat.label}</span>
+                <span className={`text-xs font-bold ${isActive ? 'text-primary' : 'text-on-surface-variant'}`}>{cat.label}</span>
               </button>
             )
           })}
@@ -498,16 +501,16 @@ const HomePage = ({ spots, userLocation, locationName, setLocationName, onSelect
       </section>
 
       {/* Recommendations */}
-      <section className="mb-10 pl-6">
-        <div className="flex justify-between items-center mb-4 pr-6">
+      <section className="mb-12">
+        <div className="flex justify-between items-center mb-5 px-6">
           <h2 className="text-lg font-bold text-on-surface">Rekomendasi Terdekat</h2>
-          <button className="text-sm font-semibold text-primary">Lihat Semua</button>
+          <button className="text-sm font-bold text-primary hover:text-[#0E84C3] transition-colors">Lihat Semua</button>
         </div>
 
-        <div className="flex gap-4 overflow-x-auto pb-6 pr-6 scrollbar-hide snap-x">
+        <div className="flex gap-5 overflow-x-auto pb-8 px-6 scrollbar-hide snap-x">
           {loadingNearby ? (
             [1, 2, 3].map(i => (
-              <div key={i} className="flex-shrink-0 w-64 h-72 bg-surface-dim animate-pulse rounded-2xl" />
+              <div key={i} className="flex-shrink-0 w-[260px] h-[300px] bg-surface-dim animate-pulse rounded-[1.5rem]" />
             ))
           ) : (
             displaySpots.slice(0, 6).map((spot) => (
@@ -515,23 +518,23 @@ const HomePage = ({ spots, userLocation, locationName, setLocationName, onSelect
                 key={spot.id}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => onSelectSpot(spot)}
-                className="flex-shrink-0 w-64 snap-start rounded-2xl overflow-hidden bg-surface-bright border border-outline-variant shadow-sm cursor-pointer group"
+                className="flex-shrink-0 w-[260px] snap-start premium-card cursor-pointer group overflow-hidden"
               >
-                <div className="relative h-40 overflow-hidden bg-surface-dim">
-                  <img src={spot.imageUrl} alt={spot.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-on-surface px-2 py-1 rounded-md text-xs font-bold shadow-sm flex items-center gap-1">
-                    <Star size={12} className="text-yellow-500 fill-yellow-500" /> {spot.rating}
+                <div className="relative h-44 overflow-hidden bg-surface-dim">
+                  <img src={spot.imageUrl} alt={spot.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
+                  <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-md text-on-surface px-2.5 py-1.5 rounded-lg text-xs font-bold shadow-sm flex items-center gap-1.5">
+                    <Star size={14} className="text-yellow-500 fill-yellow-500" /> {spot.rating}
                   </div>
                 </div>
-                <div className="p-4 space-y-1">
-                  <h3 className="text-base font-bold text-on-surface truncate">{spot.name}</h3>
-                  <div className="flex items-center text-on-surface-variant text-xs gap-1">
-                    <MapPin size={12} />
+                <div className="p-5 space-y-2">
+                  <h3 className="text-base font-bold text-on-surface truncate group-hover:text-primary transition-colors">{spot.name}</h3>
+                  <div className="flex items-center text-on-surface-variant text-xs gap-1.5 font-medium">
+                    <MapPin size={14} className="text-primary/70" />
                     <span className="truncate">{spot.location}</span>
                   </div>
-                  <div className="flex items-center justify-between pt-2">
-                    <span className="text-xs font-bold text-primary">{spot.price}</span>
-                    <span className="text-[10px] font-semibold text-tertiary bg-tertiary-container px-2 py-0.5 rounded-full">{spot.stats.crowd}</span>
+                  <div className="flex items-center justify-between pt-3 mt-1 border-t border-gray-50">
+                    <span className="text-sm font-bold text-primary">{spot.price}</span>
+                    <span className="text-[10px] font-bold text-tertiary bg-tertiary/10 px-2.5 py-1 rounded-full">{spot.stats.crowd}</span>
                   </div>
                 </div>
               </motion.div>
@@ -541,25 +544,29 @@ const HomePage = ({ spots, userLocation, locationName, setLocationName, onSelect
       </section>
 
       {/* Tanya AI Banner */}
-      <section className="px-6 mb-6">
+      <section className="px-6 mb-8">
         <motion.div
+          whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={onNavigateToAI}
-          className="bg-primary-container rounded-2xl p-6 relative overflow-hidden flex items-center justify-between cursor-pointer border border-primary/20 shadow-sm"
+          className="ai-gradient rounded-[1.5rem] p-6 relative overflow-hidden flex items-center justify-between cursor-pointer border border-primary/10 shadow-[0_8px_30px_rgba(27,160,226,0.12)] transition-all duration-300"
         >
           <div className="relative z-10 space-y-2 max-w-[70%]">
-            <div className="flex items-center gap-2">
-              <Sparkles size={16} className="text-on-primary-container" />
-              <span className="text-xs font-bold text-on-primary-container">AI ASISTEN</span>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="bg-white/60 p-1.5 rounded-lg backdrop-blur-sm">
+                <Sparkles size={16} className="text-primary" />
+              </div>
+              <span className="text-[10px] font-bold text-primary tracking-wider uppercase">AI ASISTEN</span>
             </div>
-            <h3 className="text-lg font-bold text-on-primary-container leading-tight">Cari Tempat Sesuai Mood?</h3>
-            <p className="text-xs font-medium text-on-primary-container/80">Tanya AI kami untuk rekomendasi terbaik.</p>
+            <h3 className="text-xl font-bold text-on-primary-container leading-tight drop-shadow-sm">Cari Tempat Sesuai Mood?</h3>
+            <p className="text-sm font-medium text-on-primary-container/80">Tanya AI kami untuk rekomendasi terbaik.</p>
           </div>
-          <div className="relative z-10 w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white shadow-md">
+          <div className="relative z-10 w-12 h-12 bg-white rounded-full flex items-center justify-center text-primary shadow-[0_4px_15px_rgba(0,0,0,0.05)] group-hover:bg-primary group-hover:text-white transition-colors duration-300">
             <ArrowRight size={20} />
           </div>
           {/* Decorative shapes */}
-          <div className="absolute right-[-20%] top-[-20%] w-32 h-32 bg-primary/20 rounded-full blur-2xl" />
+          <div className="absolute right-[-10%] top-[-20%] w-40 h-40 bg-white/40 rounded-full blur-2xl" />
+          <div className="absolute left-[30%] bottom-[-30%] w-32 h-32 bg-[#1BA0E2]/10 rounded-full blur-2xl" />
         </motion.div>
       </section>
     </motion.div>
@@ -899,13 +906,15 @@ const SavedPage = ({ savedSpots, onSelectSpot }: { savedSpots: Spot[], onSelectS
       </div>
 
       {savedSpots.length === 0 ? (
-        <div className="text-center py-20">
-          <Bookmark size={48} className="mx-auto text-outline-variant mb-4" />
-          <h3 className="text-lg font-bold text-on-surface">Belum ada yang disimpan</h3>
-          <p className="text-sm text-on-surface-variant mt-2 max-w-xs mx-auto">Jelajahi tempat menarik dan simpan ke daftar ini untuk dikunjungi nanti.</p>
+        <div className="text-center py-20 bg-surface-bright rounded-[1.5rem] border border-outline-variant/50 shadow-sm mx-4 sm:mx-0">
+          <div className="w-20 h-20 bg-surface-dim rounded-full flex items-center justify-center mx-auto mb-5">
+            <Bookmark size={32} className="text-primary/40" />
+          </div>
+          <h3 className="text-xl font-bold text-on-surface mb-2">Belum ada yang disimpan</h3>
+          <p className="text-sm text-on-surface-variant max-w-xs mx-auto">Jelajahi tempat menarik dan tekan ikon bookmark untuk menyimpannya ke daftar ini.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
+        <div className="flex flex-col gap-5">
           {savedSpots.map((spot, idx) => (
             <motion.div
               key={spot.id}
@@ -913,24 +922,27 @@ const SavedPage = ({ savedSpots, onSelectSpot }: { savedSpots: Spot[], onSelectS
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.05 }}
               onClick={() => onSelectSpot(spot)}
-              className="bg-surface-bright rounded-2xl p-3 flex gap-4 cursor-pointer hover:border-primary/50 border border-outline-variant transition-all shadow-sm group"
+              className="premium-card p-3 flex gap-4 cursor-pointer group"
             >
-              <div className="w-24 h-24 flex-shrink-0 bg-surface-dim rounded-xl overflow-hidden">
-                <img src={spot.imageUrl} alt={spot.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-              </div>
-              <div className="flex-1 flex flex-col justify-between py-1">
-                <div>
-                  <div className="flex justify-between items-start mb-1">
-                    <h3 className="font-bold text-base text-on-surface line-clamp-1">{spot.name}</h3>
-                    <div className="flex items-center text-xs font-bold text-on-surface-variant gap-1">
-                      <Star size={12} className="text-yellow-500 fill-yellow-500" /> {spot.rating}
-                    </div>
-                  </div>
-                  <p className="text-xs text-on-surface-variant line-clamp-1">{spot.location}</p>
+              <div className="w-28 h-28 flex-shrink-0 bg-surface-dim rounded-xl overflow-hidden relative">
+                <img src={spot.imageUrl} alt={spot.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
+                <div className="absolute top-2 left-2 bg-white/95 backdrop-blur-md text-on-surface px-1.5 py-0.5 rounded text-[10px] font-bold shadow-sm flex items-center gap-1">
+                  <Star size={10} className="text-yellow-500 fill-yellow-500" /> {spot.rating}
                 </div>
-                <div className="flex items-center justify-between mt-2">
-                  <span className="text-xs font-bold text-primary">{spot.price}</span>
-                  <Bookmark size={16} className="text-primary fill-primary" />
+              </div>
+              <div className="flex-1 flex flex-col justify-between py-1.5 pr-2">
+                <div>
+                  <h3 className="font-bold text-base text-on-surface line-clamp-1 group-hover:text-primary transition-colors">{spot.name}</h3>
+                  <p className="text-xs text-on-surface-variant line-clamp-1 mt-1 font-medium flex items-center gap-1">
+                    <MapPin size={12} className="text-primary/70 flex-shrink-0" />
+                    {spot.location}
+                  </p>
+                </div>
+                <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-50">
+                  <span className="text-sm font-bold text-primary">{spot.price}</span>
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors duration-300">
+                    <Bookmark size={16} className="fill-current" />
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -1035,9 +1047,9 @@ const DetailPage = ({ spot, userLocation, onUpdateSpot, onBack, onShare, isSaved
       exit={{ opacity: 0, x: -50 }}
       className="bg-surface min-h-screen pb-32 overflow-x-hidden"
     >
-      <header className="sticky top-0 z-50 bg-surface-bright/90 backdrop-blur-md border-b border-outline-variant px-4 h-16 flex items-center justify-between shadow-sm">
-        <button onClick={onBack} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-dim transition-colors">
-          <ChevronLeft size={24} className="text-on-surface" />
+      <header className="fixed top-0 left-0 w-full z-[70] glass-header px-4 h-16 flex items-center justify-between">
+        <button onClick={onBack} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-dim transition-colors text-on-surface">
+          <ChevronLeft size={24} />
         </button>
         <span className="font-bold text-on-surface truncate px-4">{spot.name}</span>
         <div className="flex items-center gap-1">
@@ -1048,9 +1060,9 @@ const DetailPage = ({ spot, userLocation, onUpdateSpot, onBack, onShare, isSaved
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto">
+      <main className="max-w-4xl mx-auto pt-16">
         {/* Photo Gallery */}
-        <section className="relative w-full aspect-video sm:aspect-[21/9] bg-surface-dim overflow-hidden">
+        <section className="relative w-full aspect-video sm:aspect-[21/9] bg-surface-dim overflow-hidden shadow-sm">
           <AnimatePresence mode="wait">
             <motion.img
               key={currentPhotoIndex}
@@ -1064,47 +1076,47 @@ const DetailPage = ({ spot, userLocation, onUpdateSpot, onBack, onShare, isSaved
             />
           </AnimatePresence>
 
-          <div className="absolute bottom-4 right-4 bg-black/60 text-white px-3 py-1 rounded-full text-xs font-bold backdrop-blur-sm">
+          <div className="absolute bottom-4 right-4 bg-black/60 text-white px-3.5 py-1.5 rounded-full text-xs font-bold backdrop-blur-md shadow-lg">
             {currentPhotoIndex + 1} / {spot.imageUrls.length}
           </div>
 
           {spot.imageUrls.length > 1 && (
             <>
-              <button onClick={prevPhoto} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/40 text-white rounded-full flex items-center justify-center backdrop-blur-sm hover:bg-black/60 transition-colors">
-                <ChevronLeft size={24} />
+              <button onClick={prevPhoto} className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/20 text-white rounded-full flex items-center justify-center backdrop-blur-md hover:bg-white/40 border border-white/30 transition-all shadow-lg active:scale-95">
+                <ChevronLeft size={26} />
               </button>
-              <button onClick={nextPhoto} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/40 text-white rounded-full flex items-center justify-center backdrop-blur-sm hover:bg-black/60 transition-colors">
-                <ArrowRight size={24} />
+              <button onClick={nextPhoto} className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/20 text-white rounded-full flex items-center justify-center backdrop-blur-md hover:bg-white/40 border border-white/30 transition-all shadow-lg active:scale-95">
+                <ArrowRight size={26} />
               </button>
             </>
           )}
         </section>
 
-        <div className="p-6 space-y-8">
+        <div className="p-6 space-y-8 -mt-6 relative z-10 bg-surface rounded-t-3xl">
           {/* Main Info */}
           <section className="space-y-4">
             <div>
-              <h1 className="text-3xl font-bold text-on-surface">{spot.name}</h1>
-              <div className="flex items-center gap-2 text-on-surface-variant mt-2 text-sm">
-                <MapPin size={16} />
+              <h1 className="text-3xl font-extrabold text-on-surface drop-shadow-sm">{spot.name}</h1>
+              <div className="flex items-center gap-2 text-on-surface-variant mt-2 text-sm font-medium">
+                <MapPin size={16} className="text-primary/70" />
                 <span>{spot.location}</span>
               </div>
             </div>
 
             <div className="flex flex-wrap gap-4 py-4 border-y border-outline-variant">
               <div className="flex items-center gap-2">
-                <Star size={20} className="text-yellow-500 fill-yellow-500" />
-                <span className="font-bold text-on-surface">{spot.rating}</span>
-                <span className="text-on-surface-variant text-sm">({spot.reviews} ulasan)</span>
+                <Star size={20} className="text-yellow-500 fill-yellow-500 drop-shadow-sm" />
+                <span className="font-bold text-on-surface text-lg">{spot.rating}</span>
+                <span className="text-on-surface-variant text-sm font-medium">({spot.reviews} ulasan)</span>
               </div>
               <div className="w-px h-6 bg-outline-variant hidden sm:block"></div>
-              <div className="flex items-center gap-2 text-on-surface text-sm font-semibold">
-                <span className="bg-surface-dim px-2 py-1 rounded-md">{spot.price}</span>
+              <div className="flex items-center gap-2 text-primary text-sm font-bold">
+                <span className="bg-primary/10 px-2.5 py-1 rounded-md">{spot.price}</span>
               </div>
               <div className="w-px h-6 bg-outline-variant hidden sm:block"></div>
               <div className="flex items-center gap-2 text-sm">
                 <span className="font-bold text-tertiary">Buka</span>
-                <span className="text-on-surface-variant">hingga {spot.openUntil}</span>
+                <span className="text-on-surface-variant font-medium">hingga {spot.openUntil}</span>
               </div>
             </div>
           </section>
@@ -1120,13 +1132,13 @@ const DetailPage = ({ spot, userLocation, onUpdateSpot, onBack, onShare, isSaved
                   alert("Lokasi Anda belum tersedia.");
                 }
               }}
-              className="flex-1 bg-primary text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-primary/90 transition-all active:scale-95 shadow-sm"
+              className="flex-1 bg-gradient-to-r from-primary to-[#0E84C3] text-white py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:shadow-[0_8px_20px_rgba(27,160,226,0.3)] transition-all active:scale-95 shadow-md"
             >
               <MapIcon size={18} /> Rute
             </button>
             <button
               onClick={() => alert(`Reservasi meja di ${spot.name} berhasil diajukan!`)}
-              className="flex-1 bg-surface-bright text-primary border border-primary py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-primary/5 transition-all active:scale-95 shadow-sm"
+              className="flex-1 bg-white text-primary border border-primary/30 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-primary/5 hover:border-primary/50 transition-all active:scale-95 shadow-[0_4px_15px_rgba(0,0,0,0.02)]"
             >
               <Sparkles size={18} /> Reservasi Meja
             </button>
@@ -1135,7 +1147,7 @@ const DetailPage = ({ spot, userLocation, onUpdateSpot, onBack, onShare, isSaved
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="md:col-span-2 space-y-8">
               {/* Menu Section */}
-              <section className="bg-surface-bright rounded-2xl p-6 border border-outline-variant shadow-sm">
+              <section className="premium-card p-6">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-lg font-bold text-on-surface">Menu Populer</h3>
                   {loadingMenu && <span className="text-xs text-primary animate-pulse">Memuat...</span>}
@@ -1402,7 +1414,7 @@ const SpotsPage = ({ spots, userLocation, onSelectSpot }: { spots: Spot[], userL
             {/* Recommendations Section */}
             <section>
               <h3 className="text-lg font-bold text-on-surface mb-4">Mungkin Kamu Suka</h3>
-              <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
+              <div className="flex gap-5 overflow-x-auto pb-6 scrollbar-hide snap-x -mx-6 px-6">
                 {recommendations.map((s, idx) => (
                   <motion.div
                     key={s.id}
@@ -1411,23 +1423,23 @@ const SpotsPage = ({ spots, userLocation, onSelectSpot }: { spots: Spot[], userL
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: idx * 0.1 }}
-                    className="flex-shrink-0 w-64 snap-start rounded-2xl overflow-hidden bg-surface-bright border border-outline-variant shadow-sm cursor-pointer group"
+                    className="flex-shrink-0 w-64 snap-start premium-card cursor-pointer group overflow-hidden"
                   >
-                    <div className="relative h-36">
-                      <img src={s.imageUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                      <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm text-on-surface px-2 py-1 rounded-md text-[10px] font-bold shadow-sm flex items-center gap-1">
-                        <Star size={10} className="text-yellow-500 fill-yellow-500" /> {s.rating}
+                    <div className="relative h-40">
+                      <img src={s.imageUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
+                      <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md text-on-surface px-2 py-1 rounded-lg text-xs font-bold shadow-sm flex items-center gap-1.5">
+                        <Star size={12} className="text-yellow-500 fill-yellow-500" /> {s.rating}
                       </div>
                     </div>
-                    <div className="p-4">
-                      <h4 className="font-bold text-sm mb-1 truncate text-on-surface">{s.name}</h4>
-                      <div className="flex items-center text-on-surface-variant text-[10px] gap-1 mb-2">
-                        <MapPin size={10} />
+                    <div className="p-4 space-y-2">
+                      <h4 className="font-bold text-base mb-1 truncate text-on-surface group-hover:text-primary transition-colors">{s.name}</h4>
+                      <div className="flex items-center text-on-surface-variant text-xs gap-1.5 mb-2 font-medium">
+                        <MapPin size={14} className="text-primary/70" />
                         <span className="truncate">{s.location}</span>
                       </div>
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="font-bold text-primary">{s.price}</span>
-                        <ArrowRight size={14} className="text-primary opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                      <div className="flex justify-between items-center pt-2 mt-1 border-t border-gray-50">
+                        <span className="text-sm font-bold text-primary">{s.price}</span>
+                        <ArrowRight size={16} className="text-primary opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
                       </div>
                     </div>
                   </motion.div>
@@ -1438,7 +1450,7 @@ const SpotsPage = ({ spots, userLocation, onSelectSpot }: { spots: Spot[], userL
             {/* List Header */}
             <div>
               <h3 className="text-lg font-bold text-on-surface mb-4">Semua Tempat</h3>
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-5">
                 {spots.map((s, idx) => (
                   <motion.div
                     key={s.id}
@@ -1446,24 +1458,25 @@ const SpotsPage = ({ spots, userLocation, onSelectSpot }: { spots: Spot[], userL
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.05 }}
                     onClick={() => onSelectSpot(s)}
-                    className="bg-surface-bright rounded-2xl p-3 flex gap-4 cursor-pointer hover:border-primary/50 border border-outline-variant transition-all shadow-sm group"
+                    className="premium-card p-3 flex gap-4 cursor-pointer group"
                   >
-                    <div className="w-24 h-24 flex-shrink-0 bg-surface-dim rounded-xl overflow-hidden">
-                      <img src={s.imageUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                    </div>
-                    <div className="flex-1 flex flex-col justify-between py-1">
-                      <div>
-                        <div className="flex justify-between items-start mb-1">
-                          <h3 className="font-bold text-base text-on-surface line-clamp-1">{s.name}</h3>
-                          <div className="flex items-center text-xs font-bold text-on-surface-variant gap-1">
-                            <Star size={12} className="text-yellow-500 fill-yellow-500" /> {s.rating}
-                          </div>
-                        </div>
-                        <p className="text-xs text-on-surface-variant line-clamp-1">{s.location}</p>
+                    <div className="w-28 h-28 flex-shrink-0 bg-surface-dim rounded-xl overflow-hidden relative">
+                      <img src={s.imageUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
+                      <div className="absolute top-2 left-2 bg-white/95 backdrop-blur-md text-on-surface px-1.5 py-0.5 rounded text-[10px] font-bold shadow-sm flex items-center gap-1">
+                        <Star size={10} className="text-yellow-500 fill-yellow-500" /> {s.rating}
                       </div>
-                      <div className="flex items-center justify-between mt-2">
-                        <span className="text-xs font-bold text-primary">{s.price}</span>
-                        <span className="text-[10px] font-semibold text-tertiary bg-tertiary-container px-2 py-0.5 rounded-full">{s.stats.crowd}</span>
+                    </div>
+                    <div className="flex-1 flex flex-col justify-between py-1.5 pr-2">
+                      <div>
+                        <h3 className="font-bold text-base text-on-surface line-clamp-1 group-hover:text-primary transition-colors">{s.name}</h3>
+                        <p className="text-xs text-on-surface-variant line-clamp-1 mt-1 font-medium flex items-center gap-1">
+                          <MapPin size={12} className="text-primary/70 flex-shrink-0" />
+                          {s.location}
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-50">
+                        <span className="text-sm font-bold text-primary">{s.price}</span>
+                        <span className="text-[10px] font-bold text-tertiary bg-tertiary/10 px-2.5 py-1 rounded-full">{s.stats.crowd}</span>
                       </div>
                     </div>
                   </motion.div>

@@ -373,7 +373,8 @@ const HomePage = ({ spots, userLocation, locationName, setLocationName, onSelect
     };
 
     fetchNearby();
-  }, [placesLib, userLocation, activeCategory, locationName, setLocationName]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [placesLib, userLocation, activeCategory]);
 
   const displaySpots = nearbyResults.length > 0 ? nearbyResults : spots;
 
@@ -1587,7 +1588,8 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <div className="min-h-screen bg-surface font-sans text-on-surface select-none">
+      <div className="min-h-screen bg-transparent font-sans text-on-surface select-none">
+        <iframe src="/background.html" title="3D Background" className="fixed inset-0 w-full h-full border-none pointer-events-none z-[-1]" aria-hidden="true" tabIndex={-1} scrolling="no" />
         {!userLocation && (
           <div className="fixed inset-0 z-[100] bg-surface-bright flex flex-col items-center justify-center space-y-6">
             <div className="relative">

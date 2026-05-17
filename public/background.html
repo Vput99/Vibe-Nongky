@@ -1,0 +1,1159 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe Nongky — 3D Logo Experience</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+    <style>
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --warm-orange: #F5A623;
+            --deep-orange: #E0782E;
+            --sky-blue: #2B9FD8;
+            --deep-blue: #1A6FA8;
+            --cream: #FFF8F0;
+            --ink: #0D1F33;
+            --ink-light: #1A3A5C;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Outfit', sans-serif;
+            background: var(--cream);
+        }
+
+        #canvas-container {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        /* ---- Ambient background layers ---- */
+        .bg-ambient {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .bg-ambient .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.35;
+            animation: orbFloat 20s ease-in-out infinite;
+        }
+
+        .bg-ambient .orb-1 {
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, #F5A623 0%, transparent 70%);
+            top: -10%;
+            right: -5%;
+            animation-delay: 0s;
+        }
+
+        .bg-ambient .orb-2 {
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, #2B9FD8 0%, transparent 70%);
+            bottom: -15%;
+            left: -8%;
+            animation-delay: -7s;
+        }
+
+        .bg-ambient .orb-3 {
+            width: 350px;
+            height: 350px;
+            background: radial-gradient(circle, #E0782E 0%, transparent 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation-delay: -14s;
+            opacity: 0.2;
+        }
+
+        @keyframes orbFloat {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            25% {
+                transform: translate(30px, -20px) scale(1.05);
+            }
+
+            50% {
+                transform: translate(-20px, 30px) scale(0.95);
+            }
+
+            75% {
+                transform: translate(15px, 15px) scale(1.02);
+            }
+        }
+
+        /* ---- Noise texture overlay ---- */
+        .noise-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 2;
+            pointer-events: none;
+            opacity: 0.025;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-repeat: repeat;
+            background-size: 256px 256px;
+        }
+
+        /* ---- UI Layer ---- */
+        .ui-layer {
+            position: fixed;
+            inset: 0;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: clamp(20px, 4vh, 48px) clamp(24px, 5vw, 64px);
+        }
+
+        /* Top bar */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            pointer-events: auto;
+        }
+
+        .brand-mark {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            opacity: 0;
+            animation: fadeSlideDown 1s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+        }
+
+        .brand-mark .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--warm-orange), var(--deep-orange));
+            box-shadow: 0 0 20px rgba(245, 166, 35, 0.5);
+        }
+
+        .brand-mark span {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--ink-light);
+        }
+
+        .top-actions {
+            display: flex;
+            gap: 10px;
+            opacity: 0;
+            animation: fadeSlideDown 1s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
+        }
+
+        .top-actions button {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 10px 20px;
+            border-radius: 100px;
+            border: 1.5px solid rgba(13, 31, 51, 0.1);
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            color: var(--ink-light);
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: auto;
+        }
+
+        .top-actions button:hover {
+            background: var(--ink);
+            color: var(--cream);
+            border-color: var(--ink);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(13, 31, 51, 0.2);
+        }
+
+        .top-actions button.primary {
+            background: linear-gradient(135deg, var(--warm-orange), var(--deep-orange));
+            color: white;
+            border-color: transparent;
+        }
+
+        .top-actions button.primary:hover {
+            box-shadow: 0 8px 30px rgba(224, 120, 46, 0.4);
+        }
+
+        /* Center content */
+        .center-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: none;
+            width: 100%;
+            max-width: 900px;
+            padding: 0 24px;
+        }
+
+        .center-content .eyebrow {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.35em;
+            text-transform: uppercase;
+            color: var(--deep-orange);
+            margin-bottom: 20px;
+            opacity: 0;
+            animation: fadeSlideUp 1s cubic-bezier(0.16, 1, 0.3, 1) 1.2s forwards;
+        }
+
+        .center-content h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: clamp(2.5rem, 7vw, 5.5rem);
+            font-weight: 800;
+            line-height: 1.05;
+            color: var(--ink);
+            letter-spacing: -0.03em;
+            opacity: 0;
+            animation: fadeSlideUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) 1.4s forwards;
+        }
+
+        .center-content h1 .accent {
+            background: linear-gradient(135deg, var(--warm-orange), var(--deep-orange));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .center-content .subtitle {
+            font-family: 'Outfit', sans-serif;
+            font-size: clamp(0.95rem, 2vw, 1.15rem);
+            font-weight: 400;
+            color: var(--ink-light);
+            margin-top: 20px;
+            line-height: 1.7;
+            max-width: 480px;
+            margin-left: auto;
+            margin-right: auto;
+            opacity: 0;
+            animation: fadeSlideUp 1s cubic-bezier(0.16, 1, 0.3, 1) 1.7s forwards;
+        }
+
+        /* Bottom bar */
+        .bottom-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            pointer-events: auto;
+        }
+
+        .interaction-hint {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            opacity: 0;
+            animation: fadeSlideUp 1s cubic-bezier(0.16, 1, 0.3, 1) 2s forwards;
+        }
+
+        .hint-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(13, 31, 51, 0.06);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: hintPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes hintPulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(245, 166, 35, 0.2);
+            }
+
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 10px rgba(245, 166, 35, 0);
+            }
+        }
+
+        .hint-icon svg {
+            width: 18px;
+            height: 18px;
+            stroke: var(--deep-orange);
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .hint-text {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--ink-light);
+            opacity: 0.6;
+        }
+
+        .social-dots {
+            display: flex;
+            gap: 8px;
+            opacity: 0;
+            animation: fadeSlideUp 1s cubic-bezier(0.16, 1, 0.3, 1) 2.2s forwards;
+        }
+
+        .social-dots a {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(13, 31, 51, 0.06);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            pointer-events: auto;
+            text-decoration: none;
+        }
+
+        .social-dots a:hover {
+            background: var(--ink);
+            transform: translateY(-3px) scale(1.1);
+            box-shadow: 0 6px 20px rgba(13, 31, 51, 0.2);
+        }
+
+        .social-dots a:hover svg {
+            stroke: var(--cream);
+        }
+
+        .social-dots a svg {
+            width: 15px;
+            height: 15px;
+            stroke: var(--ink-light);
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: stroke 0.3s ease;
+        }
+
+        /* ---- Animations ---- */
+        @keyframes fadeSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeSlideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ---- Loading ---- */
+        .loader {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            background: var(--cream);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.8s;
+        }
+
+        .loader.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .loader-ring {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 3px solid rgba(245, 166, 35, 0.15);
+            border-top-color: var(--warm-orange);
+            animation: loaderSpin 0.8s linear infinite;
+        }
+
+        @keyframes loaderSpin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loader-text {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--ink-light);
+            opacity: 0.5;
+        }
+
+        /* ---- Scroll indicator (decorative) ---- */
+        .scroll-line {
+            position: fixed;
+            left: 50%;
+            bottom: 0;
+            width: 1px;
+            height: 60px;
+            background: linear-gradient(to bottom, transparent, rgba(13, 31, 51, 0.15));
+            z-index: 5;
+            pointer-events: none;
+            opacity: 0;
+            animation: fadeSlideUp 1s cubic-bezier(0.16, 1, 0.3, 1) 2.5s forwards;
+        }
+
+        .scroll-line::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -1.5px;
+            width: 3px;
+            height: 20px;
+            background: linear-gradient(to bottom, var(--warm-orange), var(--deep-orange));
+            border-radius: 2px;
+            animation: scrollDot 2s ease-in-out infinite;
+        }
+
+        @keyframes scrollDot {
+
+            0%,
+            100% {
+                top: 0;
+                opacity: 1;
+            }
+
+            50% {
+                top: 40px;
+                opacity: 0.3;
+            }
+        }
+
+        /* ---- Responsive ---- */
+        @media (max-width: 640px) {
+            .ui-layer {
+                padding: 16px 20px;
+            }
+
+            .top-actions {
+                display: none;
+            }
+
+            .bottom-bar {
+                flex-direction: column;
+                align-items: center;
+                gap: 20px;
+            }
+
+            .scroll-line {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Loader -->
+    <div class="loader" id="loader">
+        <div class="loader-ring"></div>
+        <div class="loader-text">Preparing Experience</div>
+    </div>
+
+    <!-- Ambient Background -->
+    <div class="bg-ambient">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- Noise Texture -->
+    <div class="noise-overlay"></div>
+
+    <!-- 3D Canvas -->
+    <div id="canvas-container"></div>
+
+    <div class="bottom-bar">
+        <div class="interaction-hint">
+            <div class="hint-icon">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 2a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4z" />
+                    <path d="M8 15v2a4 4 0 0 0 8 0v-2" />
+                    <path d="M12 19v4" />
+                    <path d="M9 23h6" />
+                </svg>
+            </div>
+            <span class="hint-text">Drag to explore</span>
+        </div>
+        <div class="social-dots">
+            <a href="#" aria-label="Instagram">
+                <svg viewBox="0 0 24 24">
+                    <rect x="2" y="2" width="20" height="20" rx="5" />
+                    <circle cx="12" cy="12" r="5" />
+                    <circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none" />
+                </svg>
+            </a>
+            <a href="#" aria-label="Twitter">
+                <svg viewBox="0 0 24 24">
+                    <path d="M4 4l11.7 16h3.6L7.6 4z" />
+                    <path d="M4 20l7.7-8.5M12.3 11.5L20 4" />
+                </svg>
+            </a>
+            <a href="#" aria-label="Location">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z" />
+                    <circle cx="12" cy="9" r="2.5" />
+                </svg>
+            </a>
+        </div>
+    </div>
+    </div>
+
+    <div class="scroll-line"></div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // ============================================
+        // SCENE SETUP
+        // ============================================
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        // Warm fog for depth
+        scene.fog = new THREE.FogExp2(0xFFF8F0, 0.012);
+
+        const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 200);
+        camera.position.set(0, 1.5, 10);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.15;
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        container.appendChild(renderer.domElement);
+
+        // ============================================
+        // CONTROLS
+        // ============================================
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.04;
+        controls.enableZoom = true;
+        controls.minDistance = 5;
+        controls.maxDistance = 18;
+        controls.maxPolarAngle = Math.PI * 0.85;
+        controls.minPolarAngle = Math.PI * 0.15;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.8;
+        controls.target.set(0, 0.5, 0);
+
+        // ============================================
+        // LIGHTING — Warm café atmosphere
+        // ============================================
+        const ambientLight = new THREE.AmbientLight(0xFFF0E0, 0.5);
+        scene.add(ambientLight);
+
+        // Key light — warm sun from upper right
+        const keyLight = new THREE.DirectionalLight(0xFFE8D0, 2.0);
+        keyLight.position.set(5, 8, 6);
+        keyLight.castShadow = true;
+        keyLight.shadow.mapSize.width = 2048;
+        keyLight.shadow.mapSize.height = 2048;
+        keyLight.shadow.camera.near = 0.5;
+        keyLight.shadow.camera.far = 30;
+        keyLight.shadow.camera.left = -8;
+        keyLight.shadow.camera.right = 8;
+        keyLight.shadow.camera.top = 8;
+        keyLight.shadow.camera.bottom = -8;
+        keyLight.shadow.bias = -0.0005;
+        keyLight.shadow.radius = 4;
+        scene.add(keyLight);
+
+        // Fill light — cool blue from left
+        const fillLight = new THREE.DirectionalLight(0xC8E0F0, 0.6);
+        fillLight.position.set(-6, 4, -3);
+        scene.add(fillLight);
+
+        // Rim light — warm highlight from behind
+        const rimLight = new THREE.DirectionalLight(0xFFD4A0, 1.0);
+        rimLight.position.set(-2, 3, -8);
+        scene.add(rimLight);
+
+        // Bottom bounce — subtle warm fill from below
+        const bounceLight = new THREE.DirectionalLight(0xFFE0C0, 0.3);
+        bounceLight.position.set(0, -3, 2);
+        scene.add(bounceLight);
+
+        // Point lights for sparkle
+        const pointLight1 = new THREE.PointLight(0xF5A623, 0.8, 15);
+        pointLight1.position.set(3, 2, 4);
+        scene.add(pointLight1);
+
+        const pointLight2 = new THREE.PointLight(0x2B9FD8, 0.5, 15);
+        pointLight2.position.set(-3, 1, 3);
+        scene.add(pointLight2);
+
+        // ============================================
+        // ENVIRONMENT MAP (procedural)
+        // ============================================
+        const pmremGenerator = new THREE.PMREMGenerator(renderer);
+        pmremGenerator.compileEquirectangularShader();
+
+        const envScene = new THREE.Scene();
+        const envGeo = new THREE.SphereGeometry(50, 32, 32);
+
+        // Create a warm studio environment
+        const envMat = new THREE.MeshBasicMaterial({
+            color: 0xFFF5E8,
+            side: THREE.BackSide
+        });
+        const envMesh = new THREE.Mesh(envGeo, envMat);
+        envScene.add(envMesh);
+
+        // Add light panels to env
+        const panelGeo = new THREE.PlaneGeometry(20, 20);
+        const panelMat1 = new THREE.MeshBasicMaterial({ color: 0xFFF0D8 });
+        const panel1 = new THREE.Mesh(panelGeo, panelMat1);
+        panel1.position.set(0, 20, 0);
+        panel1.rotation.x = Math.PI / 2;
+        envScene.add(panel1);
+
+        const panelMat2 = new THREE.MeshBasicMaterial({ color: 0xE8F4FC });
+        const panel2 = new THREE.Mesh(panelGeo, panelMat2);
+        panel2.position.set(-20, 5, 0);
+        panel2.rotation.y = Math.PI / 2;
+        envScene.add(panel2);
+
+        const envMap = pmremGenerator.fromScene(envScene).texture;
+        scene.environment = envMap;
+
+        // ============================================
+        // MATERIALS
+        // ============================================
+        const pinMat = new THREE.MeshPhysicalMaterial({
+            color: 0xFFFFFF,
+            metalness: 0.05,
+            roughness: 0.15,
+            clearcoat: 0.8,
+            clearcoatRoughness: 0.1,
+            envMapIntensity: 1.2,
+            side: THREE.DoubleSide,
+        });
+
+        const cupMat = new THREE.MeshPhysicalMaterial({
+            color: 0xFFFFFF,
+            metalness: 0.0,
+            roughness: 0.08,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.05,
+            envMapIntensity: 1.5,
+        });
+
+        const coffeeMat = new THREE.MeshPhysicalMaterial({
+            color: 0x5C2D0E,
+            metalness: 0.0,
+            roughness: 0.25,
+            clearcoat: 0.4,
+            clearcoatRoughness: 0.3,
+            envMapIntensity: 0.8,
+        });
+
+        const steamMat = new THREE.MeshPhysicalMaterial({
+            color: 0xFFFFFF,
+            metalness: 0.0,
+            roughness: 0.0,
+            transmission: 0.95,
+            thickness: 0.5,
+            transparent: true,
+            opacity: 0.35,
+            ior: 1.1,
+            envMapIntensity: 0.5,
+        });
+
+        const shadowMat = new THREE.MeshPhysicalMaterial({
+            color: 0x0D1F33,
+            metalness: 0.0,
+            roughness: 0.9,
+            transparent: true,
+            opacity: 0.08,
+        });
+
+        // ============================================
+        // GRADIENT TEXTURE GENERATOR
+        // ============================================
+        function createGradientTexture(width, height, colors, stops) {
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+
+            const gradient = ctx.createLinearGradient(0, 0, 0, height);
+            for (let i = 0; i < colors.length; i++) {
+                gradient.addColorStop(stops[i], colors[i]);
+            }
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, width, height);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.colorSpace = THREE.SRGBColorSpace;
+            return texture;
+        }
+
+        // Create the orange-to-blue gradient for the pin
+        const pinGradient = createGradientTexture(512, 1024,
+            ['#F5A623', '#E0782E', '#D05020', '#2B9FD8', '#1A6FA8', '#0F5A94'],
+            [0.0, 0.15, 0.35, 0.55, 0.8, 1.0]
+        );
+
+        // ============================================
+        // 3D LOGO GROUP
+        // ============================================
+        const logoGroup = new THREE.Group();
+        scene.add(logoGroup);
+
+        // ---- PIN SHAPE (LatheGeometry for smooth revolved surface) ----
+        function createPinShape() {
+            const points = [];
+            const segments = 80;
+
+            // Top dome (circle arc)
+            for (let i = 0; i <= 30; i++) {
+                const t = i / 30;
+                const angle = Math.PI * 0.5 * (1 - t);
+                const x = Math.cos(angle) * 1.0;
+                const y = Math.sin(angle) * 1.0 + 0.6;
+                points.push(new THREE.Vector2(x, y));
+            }
+
+            // Sides (slight taper)
+            for (let i = 0; i <= 20; i++) {
+                const t = i / 20;
+                const x = 1.0 - t * 0.05;
+                const y = 0.6 - t * 0.4;
+                points.push(new THREE.Vector2(x, y));
+            }
+
+            // Point (smooth teardrop taper)
+            for (let i = 0; i <= 30; i++) {
+                const t = i / 30;
+                const x = 0.95 * Math.pow(1 - t, 1.5);
+                const y = 0.2 - t * 2.2;
+                points.push(new THREE.Vector2(x, y));
+            }
+
+            const geometry = new THREE.LatheGeometry(points, 64);
+            const uvs = geometry.attributes.uv;
+
+            // Remap UVs for vertical gradient
+            for (let i = 0; i < uvs.count; i++) {
+                const y = geometry.attributes.position.getY(i);
+                const v = (y + 2.0) / 3.2;
+                uvs.setY(i, 1 - v);
+            }
+
+            geometry.computeVertexNormals();
+            return geometry;
+        }
+
+        const pinGeo = createPinShape();
+        const pinMesh = new THREE.Mesh(pinGeo, new THREE.MeshPhysicalMaterial({
+            map: pinGradient,
+            metalness: 0.02,
+            roughness: 0.12,
+            clearcoat: 0.9,
+            clearcoatRoughness: 0.08,
+            envMapIntensity: 1.3,
+            side: THREE.DoubleSide,
+        }));
+        pinMesh.castShadow = true;
+        pinMesh.receiveShadow = true;
+        logoGroup.add(pinMesh);
+
+        // ---- INNER GLOW RING (subtle highlight on the dome) ----
+        const innerRingGeo = new THREE.TorusGeometry(0.55, 0.015, 16, 64);
+        const innerRingMat = new THREE.MeshPhysicalMaterial({
+            color: 0xFFFFFF,
+            emissive: 0xFFFFFF,
+            emissiveIntensity: 0.3,
+            metalness: 0.0,
+            roughness: 0.0,
+            transparent: true,
+            opacity: 0.4,
+        });
+        const innerRing = new THREE.Mesh(innerRingGeo, innerRingMat);
+        innerRing.position.set(0, 1.05, 0.35);
+        innerRing.rotation.x = -0.3;
+        logoGroup.add(innerRing);
+
+        // ---- COFFEE CUP ----
+        const cupGroup = new THREE.Group();
+        cupGroup.position.set(0, 0.82, 0.42);
+        cupGroup.scale.set(0.55, 0.55, 0.55);
+        logoGroup.add(cupGroup);
+
+        // Cup body — slightly tapered cylinder
+        const cupBodyGeo = new THREE.CylinderGeometry(0.58, 0.48, 0.52, 48, 1, false);
+        const cupBody = new THREE.Mesh(cupBodyGeo, cupMat);
+        cupBody.castShadow = true;
+        cupBody.receiveShadow = true;
+        cupGroup.add(cupBody);
+
+        // Cup bottom
+        const cupBottomGeo = new THREE.CircleGeometry(0.48, 48);
+        const cupBottom = new THREE.Mesh(cupBottomGeo, cupMat);
+        cupBottom.rotation.x = Math.PI / 2;
+        cupBottom.position.y = -0.26;
+        cupGroup.add(cupBottom);
+
+        // Cup rim (torus)
+        const rimGeo = new THREE.TorusGeometry(0.58, 0.035, 16, 48);
+        const rim = new THREE.Mesh(rimGeo, cupMat);
+        rim.position.y = 0.26;
+        rim.rotation.x = Math.PI / 2;
+        cupGroup.add(rim);
+
+        // Inner rim
+        const innerRimGeo = new THREE.TorusGeometry(0.54, 0.02, 12, 48);
+        const innerRim = new THREE.Mesh(innerRimGeo, new THREE.MeshPhysicalMaterial({
+            color: 0xF0F0F0,
+            metalness: 0.0,
+            roughness: 0.1,
+            clearcoat: 0.5,
+        }));
+        innerRim.position.y = 0.24;
+        innerRim.rotation.x = Math.PI / 2;
+        cupGroup.add(innerRim);
+
+        // Coffee liquid
+        const coffeeGeo = new THREE.CircleGeometry(0.52, 48);
+        const coffee = new THREE.Mesh(coffeeGeo, coffeeMat);
+        coffee.rotation.x = -Math.PI / 2;
+        coffee.position.y = 0.18;
+        cupGroup.add(coffee);
+
+        // Coffee highlight (small bright spot)
+        const highlightGeo = new THREE.CircleGeometry(0.08, 16);
+        const highlightMat = new THREE.MeshBasicMaterial({
+            color: 0xFFFFFF,
+            transparent: true,
+            opacity: 0.15,
+        });
+        const highlight = new THREE.Mesh(highlightGeo, highlightMat);
+        highlight.rotation.x = -Math.PI / 2;
+        highlight.position.set(0.15, 0.185, 0.1);
+        cupGroup.add(highlight);
+
+        // Cup handle — elegant C-shape
+        const handleCurve = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(0.58, 0.08, 0),
+            new THREE.Vector3(0.85, 0.12, 0),
+            new THREE.Vector3(0.92, 0.0, 0),
+            new THREE.Vector3(0.85, -0.12, 0),
+            new THREE.Vector3(0.58, -0.08, 0),
+        ]);
+        const handleGeo = new THREE.TubeGeometry(handleCurve, 32, 0.055, 12, false);
+        const handle = new THREE.Mesh(handleGeo, cupMat);
+        handle.castShadow = true;
+        cupGroup.add(handle);
+
+        // ---- STEAM PARTICLES ----
+        const steamGroup = new THREE.Group();
+        cupGroup.add(steamGroup);
+
+        const steamParticles = [];
+        const steamCount = 5;
+
+        for (let i = 0; i < steamCount; i++) {
+            const steamGeo = new THREE.SphereGeometry(0.06 + Math.random() * 0.04, 12, 12);
+            const steam = new THREE.Mesh(steamGeo, steamMat.clone());
+            steam.position.set(
+                (Math.random() - 0.5) * 0.2,
+                0.35 + Math.random() * 0.3,
+                (Math.random() - 0.5) * 0.1
+            );
+            steam.userData = {
+                baseY: steam.position.y,
+                speed: 0.15 + Math.random() * 0.2,
+                phase: Math.random() * Math.PI * 2,
+                drift: (Math.random() - 0.5) * 0.3,
+                baseScale: 0.5 + Math.random() * 0.5,
+            };
+            steamGroup.add(steam);
+            steamParticles.push(steam);
+        }
+
+        // ---- GROUND SHADOW ----
+        const shadowGeo = new THREE.CircleGeometry(1.4, 64);
+        const shadow = new THREE.Mesh(shadowGeo, shadowMat);
+        shadow.rotation.x = -Math.PI / 2;
+        shadow.position.y = -2.05;
+        logoGroup.add(shadow);
+
+        // ---- GROUND REFLECTION (subtle) ----
+        const reflectGeo = new THREE.CircleGeometry(1.0, 64);
+        const reflectMat = new THREE.MeshBasicMaterial({
+            color: 0xF5A623,
+            transparent: true,
+            opacity: 0.03,
+        });
+        const reflect = new THREE.Mesh(reflectGeo, reflectMat);
+        reflect.rotation.x = -Math.PI / 2;
+        reflect.position.y = -2.04;
+        logoGroup.add(reflect);
+
+        // ============================================
+        // FLOATING PARTICLES (ambient dust/motes)
+        // ============================================
+        const particleCount = 60;
+        const particleGeo = new THREE.BufferGeometry();
+        const particlePositions = new Float32Array(particleCount * 3);
+        const particleSizes = new Float32Array(particleCount);
+
+        for (let i = 0; i < particleCount; i++) {
+            particlePositions[i * 3] = (Math.random() - 0.5) * 20;
+            particlePositions[i * 3 + 1] = (Math.random() - 0.5) * 15;
+            particlePositions[i * 3 + 2] = (Math.random() - 0.5) * 15;
+            particleSizes[i] = Math.random() * 3 + 1;
+        }
+
+        particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+        particleGeo.setAttribute('size', new THREE.BufferAttribute(particleSizes, 1));
+
+        const particleMat = new THREE.PointsMaterial({
+            color: 0xF5A623,
+            size: 0.04,
+            transparent: true,
+            opacity: 0.25,
+            sizeAttenuation: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+        });
+
+        const particles = new THREE.Points(particleGeo, particleMat);
+        scene.add(particles);
+
+        // ============================================
+        // TEXT USING CANVAS TEXTURE (no external font dependency)
+        // ============================================
+        function createTextTexture(text, fontSize, color, fontWeight = '800') {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const w = 1024;
+            const h = 300;
+            canvas.width = w;
+            canvas.height = h;
+
+            ctx.clearRect(0, 0, w, h);
+            ctx.font = `${fontWeight} ${fontSize}px 'Outfit', sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = color;
+            ctx.fillText(text, w / 2, h / 2);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.colorSpace = THREE.SRGBColorSpace;
+            texture.minFilter = THREE.LinearFilter;
+            texture.magFilter = THREE.LinearFilter;
+            return texture;
+        }
+
+        // "Vibe" text
+        const vibeTexture = createTextTexture('Vibe', 200, '#0D1F33', '800');
+        const vibeGeo = new THREE.PlaneGeometry(2.8, 0.82);
+        const vibeMat = new THREE.MeshBasicMaterial({
+            map: vibeTexture,
+            transparent: true,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+        });
+        const vibeMesh = new THREE.Mesh(vibeGeo, vibeMat);
+        vibeMesh.position.set(0, -2.6, 0);
+        logoGroup.add(vibeMesh);
+
+        // "Nongky" text
+        const nongkyTexture = createTextTexture('Nongky', 200, '#0D1F33', '800');
+        const nongkyGeo = new THREE.PlaneGeometry(4.0, 0.82);
+        const nongkyMat = new THREE.MeshBasicMaterial({
+            map: nongkyTexture,
+            transparent: true,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+        });
+        const nongkyMesh = new THREE.Mesh(nongkyGeo, nongkyMat);
+        nongkyMesh.position.set(0, -3.5, 0);
+        logoGroup.add(nongkyMesh);
+
+        // ============================================
+        // MOUSE PARALLAX
+        // ============================================
+        let mouseX = 0, mouseY = 0;
+        let targetMouseX = 0, targetMouseY = 0;
+
+        document.addEventListener('mousemove', (e) => {
+            targetMouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+            targetMouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+        });
+
+        // Touch support
+        document.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                targetMouseX = (e.touches[0].clientX / window.innerWidth - 0.5) * 2;
+                targetMouseY = (e.touches[0].clientY / window.innerHeight - 0.5) * 2;
+            }
+        }, { passive: true });
+
+        // ============================================
+        // ANIMATION LOOP
+        // ============================================
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const t = clock.getElapsedTime();
+            const delta = clock.getDelta();
+
+            // Smooth mouse interpolation
+            mouseX += (targetMouseX - mouseX) * 0.04;
+            mouseY += (targetMouseY - mouseY) * 0.04;
+
+            // Logo gentle floating
+            logoGroup.position.y = Math.sin(t * 0.8) * 0.08;
+            logoGroup.rotation.y = Math.sin(t * 0.3) * 0.03;
+
+            // Subtle tilt based on mouse
+            logoGroup.rotation.x = mouseY * 0.04;
+            logoGroup.rotation.z = -mouseX * 0.03;
+
+            // Camera parallax
+            camera.position.x += (mouseX * 0.3 - camera.position.x) * 0.02;
+            camera.position.y += (1.5 + mouseY * 0.15 - camera.position.y) * 0.02;
+            camera.lookAt(0, 0.3, 0);
+
+            // Steam animation
+            steamParticles.forEach((p, i) => {
+                const d = p.userData;
+                p.position.y = d.baseY + Math.sin(t * d.speed + d.phase) * 0.12 + t * d.speed * 0.08;
+                p.position.x = Math.sin(t * d.speed * 1.5 + d.phase) * d.drift;
+                const scale = d.baseScale * (1 + Math.sin(t * d.speed + d.phase) * 0.3);
+                p.scale.setScalar(scale);
+                p.material.opacity = 0.2 + Math.sin(t * d.speed * 2 + d.phase) * 0.15;
+            });
+
+            // Inner ring pulse
+            innerRing.material.opacity = 0.25 + Math.sin(t * 1.5) * 0.15;
+            innerRing.scale.setScalar(1 + Math.sin(t * 1.5) * 0.05);
+
+            // Coffee highlight shimmer
+            highlight.material.opacity = 0.1 + Math.sin(t * 2) * 0.08;
+
+            // Particles drift
+            const pos = particles.geometry.attributes.position;
+            for (let i = 0; i < particleCount; i++) {
+                let y = pos.getY(i);
+                y += Math.sin(t * 0.3 + i) * 0.002;
+                pos.setY(i, y);
+            }
+            pos.needsUpdate = true;
+            particles.rotation.y = t * 0.02;
+
+            // Light animation
+            pointLight1.intensity = 0.8 + Math.sin(t * 0.7) * 0.2;
+            pointLight2.intensity = 0.5 + Math.sin(t * 0.5 + 1) * 0.15;
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // ============================================
+        // RESIZE
+        // ============================================
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // ============================================
+        // LOADING
+        // ============================================
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('loader').classList.add('hidden');
+            }, 800);
+        });
+
+        animate();
+    </script>
+</body>
+
+</html>

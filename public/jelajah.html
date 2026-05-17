@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jelajah — VibeNongky</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --orange: #FF6B2C;
+            --orange-light: #FFF4EF;
+            --cream: #FFFBF7;
+            --ink: #1A1D1F;
+            --muted: #6F767E;
+        }
+        * { font-family: 'Inter', sans-serif; }
+        h1, h2, h3, .display { font-family: 'Outfit', sans-serif; }
+        body { background: #FFFCF8; }
+        .grid-bg {
+            background-image: 
+                linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px);
+            background-size: 48px 48px;
+        }
+        .glass {
+            backdrop-filter: blur(16px);
+            background: rgba(255,255,255,0.85);
+        }
+        .vibe-card {
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .vibe-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px -12px rgba(255,107,44,0.2);
+        }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="text-[#1A1D1F] antialiased">
+    <!-- Header -->
+    <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-black/[0.06]">
+        <div class="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-[68px]">
+                <div class="flex items-center gap-8">
+                    <a href="/" class="flex items-center gap-2.5">
+                        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF7A3D] to-[#FF4E0F] flex items-center justify-center shadow-[0_4px_12px_rgba(255,107,44,0.3)]">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                                <path d="M5 8h14M5 12h9M5 16h6" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                                <circle cx="18" cy="8" r="2" fill="white"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="display font-extrabold text-[19px] leading-none tracking-tight">Vibe<span class="text-[#FF6B2C]">Nongky</span></div>
+                            <div class="text-[10px] text-[#FF6B2C] font-semibold tracking-widest uppercase -mt-0.5">CARI • NONGKRONG • VIBE</div>
+                        </div>
+                    </a>
+                    <nav class="hidden lg:flex items-center gap-1">
+                        <a href="/" class="px-4 py-2 rounded-full hover:bg-black/5 text-[14px] font-medium text-[#5A5F66]">Beranda</a>
+                        <a href="#" class="px-4 py-2 rounded-full bg-[#1A1D1F] text-white text-[14px] font-medium">Jelajah</a>
+                        <a href="#" class="px-4 py-2 rounded-full hover:bg-black/5 text-[14px] font-medium text-[#5A5F66]">Kategori</a>
+                        <a href="#" class="px-4 py-2 rounded-full hover:bg-black/5 text-[14px] font-medium text-[#5A5F66]">Kota</a>
+                        <a href="#" class="px-4 py-2 rounded-full hover:bg-black/5 text-[14px] font-medium text-[#5A5F66]">Untuk Owner</a>
+                    </nav>
+                </div>
+                <div class="flex items-center gap-2.5">
+                    <button class="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-full hover:bg-black/5 text-[13px] font-medium">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                        Tanya AI
+                    </button>
+                    <button class="px-4 py-2.5 rounded-full bg-[#1A1D1F] text-white text-[13px] font-semibold hover:bg-black transition">Cari Cepat</button>
+                    <button class="lg:hidden w-9 h-9 grid place-items-center rounded-full hover:bg-black/5">
+                        <i data-lucide="menu" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+        <!-- Top Bar -->
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+            <div>
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#E8F5E9] text-[#2E7D32] text-[11px] font-medium border border-[#C8E6C9]">
+                        <span class="w-1.5 h-1.5 rounded-full bg-[#4CAF50] animate-pulse"></span>
+                        1,845 tempat aktif hari ini
+                    </span>
+                    <span class="text-[13px] text-[#6F767E]">• Lokasi: <b class="text-[#1A1D1F]">Kediri</b></span>
+                </div>
+                <h1 class="display text-[32px] sm:text-[40px] font-extrabold leading-[1.1] tracking-tight">
+                    Jelajah Tempat <span class="text-[#FF6B2C]">Nongkrong</span>
+                </h1>
+                <p class="text-[14px] text-[#5A5F66] mt-1.5">Filter by vibe, bukan cuma rating. Temukan yang pas buat mood kamu.</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="viewGrid" class="w-9 h-9 grid place-items-center rounded-xl bg-[#1A1D1F] text-white">
+                    <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                </button>
+                <button id="viewMap" class="w-9 h-9 grid place-items-center rounded-xl hover:bg-black/5 text-[#6F767E]">
+                    <i data-lucide="map" class="w-4 h-4"></i>
+                </button>
+                <div class="w-px h-6 bg-black/10 mx-1"></div>
+                <button class="px-3.5 py-2 rounded-xl border border-black/10 hover:bg-black/5 text-[13px] font-medium flex items-center gap-1.5">
+                    <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i>
+                    Urutkan
+                </button>
+            </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="glass rounded-[20px] border border-black/10 p-3 shadow-[0_8px_24px_rgba(0,0,0,0.06)] mb-6">
+            <div class="flex flex-col sm:flex-row gap-2.5">
+                <div class="flex-1 relative">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9AA0A6]"></i>
+                    <input id="searchInput" type="text" placeholder="Cari 'cafe WFC di Bandung', 'warkop 24 jam'..." class="w-full h-11 pl-10 pr-3 rounded-xl bg-[#F7F7F8] border border-transparent focus:border-[#FF6B2C]/30 focus:bg-white focus:outline-none text-[14px]">
+                </div>
+                <div class="flex gap-2">
+                    <button class="h-11 px-3.5 rounded-xl bg-[#F7F7F8] hover:bg-[#EFEFF1] text-[13px] font-medium flex items-center gap-1.5 whitespace-nowrap">
+                        <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+                        Sekitar
+                    </button>
+                    <button class="h-11 px-5 rounded-xl bg-[#FF6B2C] hover:bg-[#E55F1F] text-white text-[14px] font-semibold shadow-[0_4px_12px_rgba(255,107,44,0.25)]">
+                        Cari
+                    </button>
+                </div>
+            </div>
+            <!-- Quick filters -->
+            <div class="flex items-center gap-2 mt-3 overflow-x-auto scrollbar-hide">
+                <button data-filter="wfc" class="filter-chip active px-3 py-1.5 rounded-full bg-[#1A1D1F] text-white text-[12px] font-medium whitespace-nowrap flex items-center gap-1.5">
+                    <span>💻</span> Cafe WFC
+                </button>
+                <button data-filter="murah" class="filter-chip px-3 py-1.5 rounded-full bg-[#F2F4F5] hover:bg-[#E9ECEF] text-[12px] font-medium whitespace-nowrap flex items-center gap-1.5">
+                    <span>💸</span> Murah Meriah
+                </button>
+                <button data-filter="24jam" class="filter-chip px-3 py-1.5 rounded-full bg-[#F2F4F5] hover:bg-[#E9ECEF] text-[12px] font-medium whitespace-nowrap flex items-center gap-1.5">
+                    <span>🌙</span> Buka 24 Jam
+                </button>
+                <button data-filter="estetik" class="filter-chip px-3 py-1.5 rounded-full bg-[#F2F4F5] hover:bg-[#E9ECEF] text-[12px] font-medium whitespace-nowrap flex items-center gap-1.5">
+                    <span>📸</span> Estetik
+                </button>
+                <button data-filter="outdoor" class="filter-chip px-3 py-1.5 rounded-full bg-[#F2F4F5] hover:bg-[#E9ECEF] text-[12px] font-medium whitespace-nowrap flex items-center gap-1.5">
+                    <span>🌿</span> Outdoor
+                </button>
+                <button data-filter="live" class="filter-chip px-3 py-1.5 rounded-full bg-[#F2F4F5] hover:bg-[#E9ECEF] text-[12px] font-medium whitespace-nowrap flex items-center gap-1.5">
+                    <span>🔴</span> Live Ramai
+                </button>
+            </div>
+        </div>
+
+        <div class="grid lg:grid-cols-[280px_1fr] gap-6">
+            <!-- Sidebar Filters -->
+            <aside class="hidden lg:block">
+                <div class="sticky top-[84px] space-y-4">
+                    <!-- Vibe Filter -->
+                    <div class="bg-white rounded-[20px] border border-black/10 p-4">
+                        <h3 class="font-semibold text-[14px] mb-3 flex items-center gap-2">
+                            <span class="w-6 h-6 grid place-items-center rounded-lg bg-[#FFF0E8] text-[#FF6B2C]">
+                                <i data-lucide="waves" class="w-3.5 h-3.5"></i>
+                            </span>
+                            Vibe Check
+                        </h3>
+                        <div class="space-y-2.5">
+                            <label class="flex items-center justify-between cursor-pointer group">
+                                <div class="flex items-center gap-2.5">
+                                    <input type="checkbox" checked class="w-4 h-4 rounded border-2 text-[#FF6B2C] focus:ring-[#FF6B2C]/20">
+                                    <span class="text-[13px]">Tenang & Fokus</span>
+                                </div>
+                                <span class="text-[11px] text-[#9AA0A6]">342</span>
+                            </label>
+                            <label class="flex items-center justify-between cursor-pointer group">
+                                <div class="flex items-center gap-2.5">
+                                    <input type="checkbox" class="w-4 h-4 rounded border-2 text-[#FF6B2C] focus:ring-[#FF6B2C]/20">
+                                    <span class="text-[13px]">Ramai & Seru</span>
+                                </div>
+                                <span class="text-[11px] text-[#9AA0A6]">518</span>
+                            </label>
+                            <label class="flex items-center justify-between cursor-pointer group">
+                                <div class="flex items-center gap-2.5">
+                                    <input type="checkbox" checked class="w-4 h-4 rounded border-2 text-[#FF6B2C] focus:ring-[#FF6B2C]/20">
+                                    <span class="text-[13px]">Cozy Date</span>
+                                </div>
+                                <span class="text-[11px] text-[#9AA0A6]">267</span>
+                            </label>
+                            <label class="flex items-center justify-between cursor-pointer group">
+                                <div class="flex items-center gap-2.5">
+                                    <input type="checkbox" class="w-4 h-4 rounded border-2 text-[#FF6B2C] focus:ring-[#FF6B2C]/20">
+                                    <span class="text-[13px]">Nugas / WFC</span>
+                                </div>
+                                <span class="text-[11px] text-[#9AA0A6]">429</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Harga -->
+                    <div class="bg-white rounded-[20px] border border-black/10 p-4">
+                        <h3 class="font-semibold text-[14px] mb-3">Harga Rata-rata</h3>
+                        <div class="flex items-center gap-2">
+                            <button class="px-3 py-1.5 rounded-lg bg-[#FFF0E8] text-[#FF6B2C] text-[12px] font-semibold border border-[#FF6B2C]/20">&lt; 25rb</button>
+                            <button class="px-3 py-1.5 rounded-lg hover:bg-[#F7F7F8] text-[12px] font-medium">25-50rb</button>
+                            <button class="px-3 py-1.5 rounded-lg hover:bg-[#F7F7F8] text-[12px] font-medium">50rb+</button>
+                        </div>
+                        <div class="mt-3 pt-3 border-t border-black/5">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-[12px] text-[#6F767E]">Range</span>
+                                <span class="text-[12px] font-medium">Rp 15rb - Rp 75rb</span>
+                            </div>
+                            <input type="range" min="15" max="75" value="35" class="w-full accent-[#FF6B2C]">
+                        </div>
+                    </div>
+
+                    <!-- Fasilitas -->
+                    <div class="bg-white rounded-[20px] border border-black/10 p-4">
+                        <h3 class="font-semibold text-[14px] mb-3">Fasilitas</h3>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="checkbox" checked class="w-3.5 h-3.5 rounded">
+                                <span class="text-[12px]">WiFi</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="checkbox" class="w-3.5 h-3.5 rounded">
+                                <span class="text-[12px]">Stopkontak</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="checkbox" checked class="w-3.5 h-3.5 rounded">
+                                <span class="text-[12px]">AC</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="checkbox" class="w-3.5 h-3.5 rounded">
+                                <span class="text-[12px]">Parkir</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="checkbox" class="w-3.5 h-3.5 rounded">
+                                <span class="text-[12px]">Mushola</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="checkbox" class="w-3.5 h-3.5 rounded">
+                                <span class="text-[12px]">Outdoor</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Live -->
+                    <div class="bg-gradient-to-br from-[#1A1D1F] to-[#2A2F35] rounded-[20px] p-4 text-white">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="w-2 h-2 rounded-full bg-[#FF4E4E] animate-pulse"></span>
+                            <h3 class="font-semibold text-[13px]">Live Sekarang</h3>
+                        </div>
+                        <p class="text-[12px] text-white/70 mb-3">42 tempat lagi rame di Kediri</p>
+                        <button class="w-full py-2 rounded-xl bg-white/10 hover:bg-white/15 backdrop-blur text-[12px] font-medium border border-white/10">
+                            Lihat yang rame
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <div>
+                <!-- Stats Bar -->
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-4">
+                        <p class="text-[13px] text-[#5A5F66]"><b class="text-[#1A1D1F]">127</b> tempat ditemukan</p>
+                        <div class="hidden sm:flex items-center gap-1.5">
+                            <div class="flex -space-x-1.5">
+                                <img src="https://i.pravatar.cc/24?img=1" class="w-6 h-6 rounded-full border-2 border-white">
+                                <img src="https://i.pravatar.cc/24?img=2" class="w-6 h-6 rounded-full border-2 border-white">
+                                <img src="https://i.pravatar.cc/24?img=3" class="w-6 h-6 rounded-full border-2 border-white">
+                            </div>
+                            <span class="text-[12px] text-[#6F767E]">99+ lagi jelajah</span>
+                        </div>
+                    </div>
+                    <select class="text-[12px] bg-transparent border-0 focus:ring-0 font-medium">
+                        <option>Paling Relevan</option>
+                        <option>Terdekat</option>
+                        <option>Rating Tertinggi</option>
+                        <option>Paling Ramai</option>
+                    </select>
+                </div>
+
+                <!-- Grid -->
+                <div id="gridView" class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                    <!-- Card 1 - Featured -->
+                    <article class="vibe-card group relative bg-white rounded-[24px] border border-black/10 overflow-hidden sm:col-span-2 xl:col-span-2">
+                        <div class="absolute top-3 left-3 z-10 flex gap-1.5">
+                            <span class="px-2.5 py-1 rounded-full bg-[#FF6B2C] text-white text-[11px] font-semibold shadow-lg">Vibe Check: Tinggi</span>
+                            <span class="px-2.5 py-1 rounded-full bg-black/70 backdrop-blur text-white text-[11px] font-medium">Live: 48% penuh</span>
+                        </div>
+                        <div class="grid md:grid-cols-[1.1fr_0.9fr]">
+                            <div class="relative h-[240px] md:h-full min-h-[260px] overflow-hidden">
+                                <img src="/public/images/warung1.jpg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Warung Tengah Kali">
+                                <div class="absolute bottom-3 left-3 right-3 flex gap-1.5">
+                                    <img src="/public/images/cafe-food.jpg" class="w-16 h-12 rounded-lg object-cover border-2 border-white shadow-md">
+                                    <img src="/public/images/garden-night.jpg" class="w-16 h-12 rounded-lg object-cover border-2 border-white shadow-md">
+                                    <img src="/public/images/warkop.jpg" class="w-16 h-12 rounded-lg object-cover border-2 border-white shadow-md">
+                                </div>
+                            </div>
+                            <div class="p-5 flex flex-col">
+                                <div class="flex items-start justify-between gap-3 mb-2">
+                                    <div>
+                                        <h3 class="font-bold text-[18px] leading-tight">Warung Tengah Kali</h3>
+                                        <p class="text-[12px] text-[#6F767E] mt-0.5">Kediri • Warkop • Rp 35rb</p>
+                                    </div>
+                                    <div class="flex items-center gap-1 px-2 py-1 rounded-lg bg-[#FFF7E6] text-[#E6A700] text-[12px] font-semibold">
+                                        <i data-lucide="star" class="w-3 h-3 fill-current"></i>4.3
+                                    </div>
+                                </div>
+                                <div class="flex flex-wrap gap-1.5 my-3">
+                                    <span class="px-2 py-1 rounded-md bg-[#E8F5E9] text-[#2E7D32] text-[11px] font-medium">✓ WiFi Tersedia</span>
+                                    <span class="px-2 py-1 rounded-md bg-[#E3F2FD] text-[#1565C0] text-[11px] font-medium">Buka 24 Jam</span>
+                                    <span class="px-2 py-1 rounded-md bg-[#F3E5F5] text-[#7B1FA2] text-[11px] font-medium">Outdoor</span>
+                                </div>
+                                <p class="text-[13px] text-[#5A5F66] leading-relaxed line-clamp-2">Hidden gem pinggir kali, vibe alam banget. Cocok buat nugas malem atau ngobrol santai. Kopi tubruk 15rb aja.</p>
+                                <div class="mt-auto pt-4 flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <div class="flex -space-x-1">
+                                            <img src="https://i.pravatar.cc/20?img=5" class="w-5 h-5 rounded-full border border-white">
+                                            <img src="https://i.pravatar.cc/20?img=6" class="w-5 h-5 rounded-full border border-white">
+                                            <img src="https://i.pravatar.cc/20?img=7" class="w-5 h-5 rounded-full border border-white">
+                                        </div>
+                                        <span class="text-[11px] text-[#6F767E]">12 teman pernah kesini</span>
+                                    </div>
+                                    <button class="px-3.5 py-1.5 rounded-full bg-[#1A1D1F] text-white text-[12px] font-medium hover:bg-black">Lihat Detail</button>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Card 2 -->
+                    <article class="vibe-card group bg-white rounded-[24px] border border-black/10 overflow-hidden">
+                        <div class="relative h-[180px] overflow-hidden">
+                            <img src="/public/images/warkop.jpg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="">
+                            <div class="absolute top-2.5 left-2.5">
+                                <span class="px-2 py-1 rounded-full bg-white/90 backdrop-blur text-[10px] font-semibold">Vibe: Medium</span>
+                            </div>
+                            <button class="absolute top-2.5 right-2.5 w-7 h-7 grid place-items-center rounded-full bg-white/90 backdrop-blur hover:bg-white">
+                                <i data-lucide="bookmark" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                        <div class="p-4">
+                            <div class="flex items-start justify-between gap-2 mb-1.5">
+                                <h3 class="font-semibold text-[15px] leading-snug">Kopi Tuku Kediri</h3>
+                                <span class="text-[11px] font-medium text-[#E6A700] flex items-center gap-0.5"><i data-lucide="star" class="w-3 h-3 fill-current"></i>4.7</span>
+                            </div>
+                            <p class="text-[12px] text-[#6F767E]">Kota • Cafe • Rp 28rb</p>
+                            <div class="flex items-center gap-1.5 mt-2.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-[#4CAF50]"></span>
+                                <span class="text-[11px] text-[#2E7D32] font-medium">Buka • Tutup 23:00</span>
+                            </div>
+                            <div class="flex items-center justify-between mt-3 pt-3 border-t border-black/5">
+                                <div class="flex gap-1">
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] bg-[#F2F4F5]">WiFi</span>
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] bg-[#F2F4F5]">AC</span>
+                                </div>
+                                <span class="text-[11px] text-[#6F767E]">0.8 km</span>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Card 3 -->
+                    <article class="vibe-card group bg-white rounded-[24px] border border-black/10 overflow-hidden">
+                        <div class="relative h-[180px] overflow-hidden">
+                            <img src="https://images.pexels.com/photos/302899/pexels-photo-302899.jpeg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="">
+                            <div class="absolute top-2.5 left-2.5">
+                                <span class="px-2 py-1 rounded-full bg-[#1A1D1F] text-white text-[10px] font-semibold">🔥 Trending</span>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <div class="flex items-start justify-between gap-2 mb-1.5">
+                                <h3 class="font-semibold text-[15px] leading-snug">Workhub Space</h3>
+                                <span class="text-[11px] font-medium text-[#E6A700] flex items-center gap-0.5"><i data-lucide="star" class="w-3 h-3 fill-current"></i>4.9</span>
+                            </div>
+                            <p class="text-[12px] text-[#6F767E]">Mojoroto • Co-working • Rp 50rb</p>
+                            <div class="flex items-center gap-1.5 mt-2.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-[#FF4E4E] animate-pulse"></span>
+                                <span class="text-[11px] text-[#D32F2F] font-medium">Live: 82% penuh</span>
+                            </div>
+                            <div class="flex items-center justify-between mt-3 pt-3 border-t border-black/5">
+                                <div class="flex gap-1">
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] bg-[#FFF0E8] text-[#FF6B2C]">WFC</span>
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] bg-[#F2F4F5]">Stopkontak</span>
+                                </div>
+                                <span class="text-[11px] text-[#6F767E]">1.2 km</span>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Card 4 -->
+                    <article class="vibe-card group bg-white rounded-[24px] border border-black/10 overflow-hidden">
+                        <div class="relative h-[180px] overflow-hidden">
+                            <img src="/public/images/garden-night.jpg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="">
+                        </div>
+                        <div class="p-4">
+                            <div class="flex items-start justify-between gap-2 mb-1.5">
+                                <h3 class="font-semibold text-[15px] leading-snug">Taman Senja</h3>
+                                <span class="text-[11px] font-medium text-[#E6A700] flex items-center gap-0.5"><i data-lucide="star" class="w-3 h-3 fill-current"></i>4.5</span>
+                            </div>
+                            <p class="text-[12px] text-[#6F767E]">Pesantren • Garden Cafe • Rp 42rb</p>
+                            <div class="flex items-center gap-1.5 mt-2.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-[#4CAF50]"></span>
+                                <span class="text-[11px] text-[#2E7D32] font-medium">Buka • Tutup 01:00</span>
+                            </div>
+                            <div class="flex items-center justify-between mt-3 pt-3 border-t border-black/5">
+                                <div class="flex gap-1">
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] bg-[#F2F4F5]">Outdoor</span>
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] bg-[#F2F4F5]">Live Music</span>
+                                </div>
+                                <span class="text-[11px] text-[#6F767E]">2.4 km</span>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Card 5 -->
+                    <article class="vibe-card group bg-white rounded-[24px] border border-black/10 overflow-hidden">
+                        <div class="relative h-[180px] overflow-hidden">
+                            <img src="https://images.pexels.com/photos/1855214/pexels-photo-1855214.jpeg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="">
+                            <div class="absolute top-2.5 left-2.5">
+                                <span class="px-2 py-1 rounded-full bg-[#E8F5E9] text-[#2E7D32] text-[10px] font-semibold">Murah Meriah</span>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <div class="flex items-start justify-between gap-2 mb-1.5">
+                                <h3 class="font-semibold text-[15px] leading-snug">Warkop Pakde</h3>
+                                <span class="text-[11px] font-medium text-[#E6A700] flex items-center gap-0.5"><i data-lucide="star" class="w-3 h-3 fill-current"></i>4.6</span>
+                            </div>
+                            <p class="text-[12px] text-[#6F767E]">Ngasem • Warkop • Rp 15rb</p>
+                            <div class="flex items-center gap-1.5 mt-2.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-[#4CAF50]"></span>
+                                <span class="text-[11px] text-[#2E7D32] font-medium">Buka 24 Jam</span>
+                            </div>
+                            <div class="flex items-center justify-between mt-3 pt-3 border-t border-black/5">
+                                <div class="flex gap-1">
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] bg-[#F2F4F5]">WiFi</span>
+                                </div>
+                                <span class="text-[11px] text-[#6F767E]">0.5 km</span>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Card 6 -->
+                    <article class="vibe-card group bg-white rounded-[24px] border border-black/10 overflow-hidden">
+                        <div class="relative h-[180px] overflow-hidden">
+                            <img src="https://images.pexels.com/photos/312418/pexels-photo-312418.jpeg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="">
+                        </div>
+                        <div class="p-4">
+                            <div class="flex items-start justify-between gap-2 mb-1.5">
+                                <h3 class="font-semibold text-[15px] leading-snug">Kopi Soe Kediri</h3>
+                                <span class="text-[11px] font-medium text-[#E6A700] flex items-center gap-0.5"><i data-lucide="star" class="w-3 h-3 fill-current"></i>4.4</span>
+                            </div>
+                            <p class="text-[12px] text-[#6F767E]">Kota • Cafe • Rp 32rb</p>
+                            <div class="flex items-center gap-1.5 mt-2.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-[#FFA726]"></span>
+                                <span class="text-[11px] text-[#EF6C00] font-medium">Rame - antri 5 menit</span>
+                            </div>
+                            <div class="flex items-center justify-between mt-3 pt-3 border-t border-black/5">
+                                <div class="flex gap-1">
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] bg-[#F2F4F5]">AC</span>
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] bg-[#F2F4F5]">Parkir</span>
+                                </div>
+                                <span class="text-[11px] text-[#6F767E]">1.5 km</span>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+
+                <!-- Map View (hidden) -->
+                <div id="mapView" class="hidden">
+                    <div class="bg-white rounded-[24px] border border-black/10 overflow-hidden h-[600px] grid-bg relative">
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="text-center">
+                                <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#FFF0E8] grid place-items-center">
+                                    <i data-lucide="map" class="w-8 h-8 text-[#FF6B2C]"></i>
+                                </div>
+                                <h3 class="font-semibold text-[18px] mb-1">Peta Interaktif</h3>
+                                <p class="text-[13px] text-[#6F767E] max-w-[280px]">Lihat semua tempat nongkrong di sekitar Kediri dengan live occupancy</p>
+                                <button class="mt-4 px-4 py-2 rounded-xl bg-[#1A1D1F] text-white text-[13px] font-medium">Aktifkan Lokasi</button>
+                            </div>
+                        </div>
+                        <!-- Map pins -->
+                        <div class="absolute top-[30%] left-[25%]">
+                            <div class="relative">
+                                <div class="w-10 h-10 rounded-full bg-[#FF6B2C] shadow-[0_0_0_4px_rgba(255,107,44,0.2)] grid place-items-center animate-pulse">
+                                    <i data-lucide="coffee" class="w-5 h-5 text-white"></i>
+                                </div>
+                                <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-1 rounded-lg bg-black text-white text-[11px]">Warung Tengah Kali</div>
+                            </div>
+                        </div>
+                        <div class="absolute top-[55%] left-[60%]">
+                            <div class="w-8 h-8 rounded-full bg-white border-2 border-[#1A1D1F] grid place-items-center shadow-lg">
+                                <span class="text-[10px] font-bold">4.9</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Load More -->
+                <div class="flex justify-center mt-8">
+                    <button class="px-6 py-2.5 rounded-full border border-black/15 hover:bg-black/5 text-[13px] font-medium flex items-center gap-2">
+                        Muat lebih banyak
+                        <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Mobile Bottom Nav -->
+    <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white/90 backdrop-blur-xl border-t border-black/10">
+        <div class="grid grid-cols-4 h-[68px] max-w-[500px] mx-auto">
+            <a href="#" class="grid place-items-center gap-1 text-[#FF6B2C]">
+                <i data-lucide="compass" class="w-5 h-5 fill-[#FFF0E8]"></i>
+                <span class="text-[11px] font-medium">Jelajah</span>
+            </a>
+            <a href="#" class="grid place-items-center gap-1 text-[#9AA0A6]">
+                <i data-lucide="layout-grid" class="w-5 h-5"></i>
+                <span class="text-[11px]">Kategori</span>
+            </a>
+            <a href="#" class="grid place-items-center gap-1 text-[#9AA0A6]">
+                <i data-lucide="sparkles" class="w-5 h-5"></i>
+                <span class="text-[11px]">AI Asisten</span>
+            </a>
+            <a href="#" class="grid place-items-center gap-1 text-[#9AA0A6]">
+                <i data-lucide="bookmark" class="w-5 h-5"></i>
+                <span class="text-[11px]">Tersimpan</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="h-[80px] lg:h-0"></div>
+
+    <script>
+        lucide.createIcons();
+        
+        // Filter chips
+        document.querySelectorAll('.filter-chip').forEach(btn => {
+            btn.addEventListener('click', () => {
+                btn.classList.toggle('active');
+                if (btn.classList.contains('active')) {
+                    btn.classList.add('bg-[#1A1D1F]', 'text-white');
+                    btn.classList.remove('bg-[#F2F4F5]', 'hover:bg-[#E9ECEF]');
+                } else {
+                    btn.classList.remove('bg-[#1A1D1F]', 'text-white');
+                    btn.classList.add('bg-[#F2F4F5]', 'hover:bg-[#E9ECEF]');
+                }
+            });
+        });
+
+        // View toggle
+        const viewGrid = document.getElementById('viewGrid');
+        const viewMap = document.getElementById('viewMap');
+        const gridView = document.getElementById('gridView');
+        const mapView = document.getElementById('mapView');
+
+        viewGrid.addEventListener('click', () => {
+            viewGrid.classList.add('bg-[#1A1D1F]', 'text-white');
+            viewGrid.classList.remove('hover:bg-black/5', 'text-[#6F767E]');
+            viewMap.classList.remove('bg-[#1A1D1F]', 'text-white');
+            viewMap.classList.add('hover:bg-black/5', 'text-[#6F767E]');
+            gridView.classList.remove('hidden');
+            mapView.classList.add('hidden');
+        });
+
+        viewMap.addEventListener('click', () => {
+            viewMap.classList.add('bg-[#1A1D1F]', 'text-white');
+            viewMap.classList.remove('hover:bg-black/5', 'text-[#6F767E]');
+            viewGrid.classList.remove('bg-[#1A1D1F]', 'text-white');
+            viewGrid.classList.add('hover:bg-black/5', 'text-[#6F767E]');
+            mapView.classList.remove('hidden');
+            gridView.classList.add('hidden');
+        });
+
+        // Search
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase();
+            document.querySelectorAll('.vibe-card').forEach(card => {
+                const text = card.innerText.toLowerCase();
+                card.style.display = text.includes(val) ? '' : 'none';
+            });
+        });
+
+        // Filter Chips toggle
+        const filterChips = document.querySelectorAll('.filter-chip');
+        filterChips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                const isActive = chip.classList.contains('active');
+                filterChips.forEach(c => {
+                    c.classList.remove('active', 'bg-[#1A1D1F]', 'text-white');
+                    c.classList.add('bg-[#F2F4F5]', 'text-[#1A1D1F]');
+                });
+                if (!isActive) {
+                    chip.classList.add('active', 'bg-[#1A1D1F]', 'text-white');
+                    chip.classList.remove('bg-[#F2F4F5]', 'text-[#1A1D1F]');
+                }
+                // Simulate filter by shuffling display
+                const cards = Array.from(document.querySelectorAll('.vibe-card'));
+                const container = document.getElementById('gridView');
+                cards.sort(() => Math.random() - 0.5);
+                cards.forEach(card => container.appendChild(card));
+            });
+        });
+
+        // Price slider update
+        const priceRange = document.querySelector('input[type="range"]');
+        if (priceRange) {
+            const priceLabel = priceRange.parentElement.querySelector('span:nth-child(2)');
+            priceRange.addEventListener('input', (e) => {
+                priceLabel.textContent = `Rp 15rb - Rp ${e.target.value}rb`;
+            });
+        }
+
+        // Checkboxes interactive
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', () => {
+                // Simulate filtering
+                const cards = Array.from(document.querySelectorAll('.vibe-card'));
+                cards.forEach(card => {
+                   if (Math.random() > 0.8) card.style.display = 'none';
+                   else card.style.display = '';
+                });
+            });
+        });
+
+        // Buttons general interactive
+        document.querySelectorAll('button').forEach(btn => {
+           if (!btn.id && !btn.classList.contains('filter-chip')) {
+               btn.addEventListener('click', (e) => {
+                   if (btn.innerText.includes('Lihat Detail')) {
+                       alert('Membuka detail tempat...');
+                   } else if (btn.innerText.includes('Cari Cepat') || btn.innerText.includes('Cari')) {
+                       // Trigger search visual
+                   } else if (btn.innerText.includes('Muat lebih banyak')) {
+                       btn.innerHTML = 'Memuat...';
+                       setTimeout(() => btn.innerHTML = 'Muat lebih banyak <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>', 1000);
+                   }
+               });
+           }
+        });
+
+        // Simulate live updates
+        setInterval(() => {
+            const liveElements = document.querySelectorAll('[class*="Live:"]');
+            liveElements.forEach(el => {
+                if (Math.random() > 0.7) {
+                    const currentMatch = el.textContent.match(/\d+/);
+                    if (currentMatch) {
+                        const current = parseInt(currentMatch[0]);
+                        const change = Math.floor(Math.random() * 10) - 5;
+                        const newVal = Math.max(10, Math.min(95, current + change));
+                        el.textContent = el.textContent.replace(/\d+%/, newVal + '%');
+                    }
+                }
+            });
+        }, 5000);
+    </script>
+</body>
+</html>

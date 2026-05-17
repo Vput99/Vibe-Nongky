@@ -18,6 +18,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { APIProvider, Map, AdvancedMarker, InfoWindow, Pin, useMapsLibrary, useMap } from '@vis.gl/react-google-maps';
 import { GoogleGenAI } from "@google/genai";
+import { fetchSpotsWithAutoGrow } from './lib/onDemandDatabase';
 
 // --- Auth / Key Config ---
 const MAP_KEY =
@@ -82,9 +83,9 @@ const MOCK_SPOTS: Spot[] = [
     price: '$$',
     openUntil: '22:00',
     imageUrl: 'https://images.unsplash.com/photo-1501339817302-38203b9f9fef?auto=format&fit=crop&w=800&q=80',
-    imageUrls: ['https://images.unsplash.com/photo-1501339817302-38203b9f9fef?auto=format&fit=crop&w=800&q=80'],
+    imageUrls: ['https://images.unsplash.com/photo-1501339817302-38203b9f9fef?auto=format&fit=crop&w=800&q=80', 'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&w=800&q=80'],
     coordinates: { lat: -7.8185, lng: 112.0005 },
-    stats: { crowd: 'Quiet', occupancy: 15, wifi: '450 Mbps' },
+    stats: { crowd: 'Quiet', occupancy: 15, wifi: 'Tersedia' },
     userReviews: [
       { id: 'r1', user: 'LOCAL_HERO', rating: 5, comment: 'Vibe pinggir sungai yang mantap.', sentiment: 'POSITIVE', date: '2024-05-01' }
     ]
@@ -102,7 +103,55 @@ const MOCK_SPOTS: Spot[] = [
     imageUrl: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=800&q=80',
     imageUrls: ['https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=800&q=80'],
     coordinates: { lat: -7.8285, lng: 112.0725 },
-    stats: { crowd: 'Medium', occupancy: 65, wifi: '200 Mbps' },
+    stats: { crowd: 'Medium', occupancy: 65, wifi: 'Tersedia' },
+    userReviews: []
+  },
+  {
+    id: '3',
+    name: 'Workhub Space',
+    location: 'Kota, Kediri',
+    distance: '0.8 km',
+    vibe: 'Tenang & Fokus',
+    rating: 4.9,
+    reviews: 320,
+    price: '$$',
+    openUntil: '24 Jam',
+    imageUrl: 'https://images.pexels.com/photos/302899/pexels-photo-302899.jpeg?auto=compress&cs=tinysrgb&w=800',
+    imageUrls: ['https://images.pexels.com/photos/302899/pexels-photo-302899.jpeg?auto=compress&cs=tinysrgb&w=800'],
+    coordinates: { lat: -7.8210, lng: 112.0105 },
+    stats: { crowd: 'Busy', occupancy: 82, wifi: 'Tersedia' },
+    userReviews: []
+  },
+  {
+    id: '4',
+    name: 'Taman Senja Outdoor',
+    location: 'Pesantren, Kediri',
+    distance: '3.4 km',
+    vibe: 'Cozy Date',
+    rating: 4.5,
+    reviews: 142,
+    price: '$',
+    openUntil: '01:00',
+    imageUrl: 'https://images.pexels.com/photos/1855214/pexels-photo-1855214.jpeg?auto=compress&cs=tinysrgb&w=800',
+    imageUrls: ['https://images.pexels.com/photos/1855214/pexels-photo-1855214.jpeg?auto=compress&cs=tinysrgb&w=800'],
+    coordinates: { lat: -7.8300, lng: 112.0300 },
+    stats: { crowd: 'Medium', occupancy: 45, wifi: '' },
+    userReviews: []
+  },
+  {
+    id: '5',
+    name: 'Warkop Pakde 24',
+    location: 'Ngasem, Kediri',
+    distance: '2.1 km',
+    vibe: 'Ramai & Seru',
+    rating: 4.3,
+    reviews: 580,
+    price: '$',
+    openUntil: 'Buka 24 Jam',
+    imageUrl: 'https://images.pexels.com/photos/312418/pexels-photo-312418.jpeg?auto=compress&cs=tinysrgb&w=800',
+    imageUrls: ['https://images.pexels.com/photos/312418/pexels-photo-312418.jpeg?auto=compress&cs=tinysrgb&w=800'],
+    coordinates: { lat: -7.8000, lng: 112.0500 },
+    stats: { crowd: 'Busy', occupancy: 90, wifi: 'Tersedia' },
     userReviews: []
   }
 ];
@@ -172,24 +221,44 @@ function getDistance(l1: { lat: number, lng: number }, l2: { lat: number, lng: n
 
 // --- Components ---
 
-const TopAppBar = ({ onNavigateToAI }: { onNavigateToAI: () => void }) => (
-  <header className="fixed top-0 left-0 w-full z-[60] glass-header h-16">
-    <div className="flex justify-between items-center max-w-5xl mx-auto px-6 h-full text-on-surface">
-      <div className="flex items-center gap-2">
-        <img src="/Logo Vibe.png" alt="Logo Vibe" className="w-8 h-8 rounded-xl shadow-md object-contain" />
-        <span className="text-xl tracking-tight text-3d-logo">NongkrongYuk</span>
-      </div>
-      <div className="flex items-center gap-4">
-        <button 
-          onClick={onNavigateToAI}
-          className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold hover:bg-primary hover:text-white transition-all duration-300 active:scale-95 shadow-sm"
-        >
-          <Sparkles size={16} />
-          <span>Tanya AI</span>
+const TopAppBar = ({ onNavigateToHome, onNavigateToAI, onNavigateToSpots }: { onNavigateToHome: () => void, onNavigateToAI: () => void, onNavigateToSpots: () => void }) => (
+  <nav className="relative z-50 glass-header w-full h-[78px]">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
+      <div className="flex items-center justify-between h-full">
+        <button onClick={onNavigateToHome} className="flex items-center gap-3 text-left">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-600 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/20 rotate-3">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <path d="M4 8h12a2 2 0 0 1 2 2v1a5 5 0 0 1-5 5H7a3 3 0 0 1-3-3V8Z" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M16 10h2a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2h-1" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M6 8V6a2 2 0 0 1 2-2h2" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.7"/>
+            </svg>
+          </div>
+          <div>
+            <span className="text-[22px] font-extrabold tracking-tight text-zinc-900">Vibe<span className="gradient-text">Nongky</span></span>
+            <div className="-mt-1.5 text-[10px] font-semibold tracking-widest text-orange-600/80 uppercase">Cari • Nongkrong • Vibe</div>
+          </div>
         </button>
+
+        <div className="hidden lg:flex items-center gap-8">
+          <button onClick={onNavigateToHome} className="text-[15px] font-medium text-zinc-700 hover:text-black transition">Beranda</button>
+          <button onClick={onNavigateToSpots} className="text-[15px] font-medium text-zinc-700 hover:text-black transition">Jelajah</button>
+          <a href="#" className="text-[15px] font-medium text-zinc-700 hover:text-black transition">Kategori</a>
+          <a href="#" className="text-[15px] font-medium text-zinc-700 hover:text-black transition">Kota</a>
+          <a href="#" className="text-[15px] font-medium text-zinc-700 hover:text-black transition">Untuk Owner</a>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button onClick={onNavigateToAI} className="hidden sm:flex items-center gap-2 text-[14px] font-semibold px-4 h-10 rounded-xl hover:bg-zinc-900/5 transition text-zinc-700">
+            <Sparkles size={18} />
+            Tanya AI
+          </button>
+          <button onClick={onNavigateToAI} className="h-10 px-5 rounded-xl bg-zinc-900 text-white text-[14px] font-semibold hover:bg-zinc-800 active:scale-[0.98] transition shadow-lg shadow-zinc-900/20">
+            Cari Cepat
+          </button>
+        </div>
       </div>
     </div>
-  </header>
+  </nav>
 );
 
 const BottomNavBar = ({ activePage, setActivePage }: { activePage: Page, setActivePage: (p: Page) => void }) => {
@@ -213,17 +282,17 @@ const BottomNavBar = ({ activePage, setActivePage }: { activePage: Page, setActi
               onClick={() => setActivePage(tab.id)}
               className="flex-1 flex flex-col items-center justify-center gap-1 py-2 group"
             >
-              <div className={`relative flex items-center justify-center transition-all ${isActive ? 'text-primary' : 'text-on-surface-variant group-hover:text-primary/70'}`}>
+              <div className={`relative flex items-center justify-center transition-all ${isActive ? 'text-orange-600' : 'text-zinc-500 group-hover:text-orange-600/70'}`}>
                 {isActive && (
                   <motion.div
                     layoutId="nav-pill"
-                    className="absolute inset-0 bg-primary/10 rounded-full w-12 h-8 -mx-3 -my-1.5"
+                    className="absolute inset-0 bg-orange-600/10 rounded-full w-12 h-8 -mx-3 -my-1.5"
                     transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
                   />
                 )}
                 <Icon size={22} strokeWidth={isActive ? 2.5 : 2} className="relative z-10" />
               </div>
-              <span className={`text-[10px] font-semibold transition-colors ${isActive ? 'text-primary' : 'text-on-surface-variant'}`}>
+              <span className={`text-[10px] font-semibold transition-colors ${isActive ? 'text-orange-600' : 'text-zinc-500'}`}>
                 {tab.label}
               </span>
             </button>
@@ -291,14 +360,8 @@ const HomePage = ({ spots, userLocation, locationName, setLocationName, onSelect
   const [nearbyResults, setNearbyResults] = useState<Spot[]>([]);
   const [loadingNearby, setLoadingNearby] = useState(false);
   const [activeCategory, setActiveCategory] = useState('Semua');
+  const [searchQuery, setSearchQuery] = useState('');
   const placesLib = useMapsLibrary('places');
-
-  const categories = [
-    { id: 'Semua', label: 'Semua', icon: MapPin },
-    { id: 'Cafe', label: 'Cafe', icon: Coffee },
-    { id: 'Restoran', label: 'Restoran', icon: List },
-    { id: 'Warung', label: 'Warung', icon: Coffee },
-  ];
 
   useEffect(() => {
     if (!placesLib || !userLocation) return;
@@ -314,7 +377,6 @@ const HomePage = ({ spots, userLocation, locationName, setLocationName, onSelect
         };
         const textQuery = queryMap[activeCategory];
 
-        const cleanName = locationName.includes('...') ? '' : locationName.replace('.OS', '');
         const { places } = await placesLib.Place.searchByText({
           textQuery: textQuery,
           locationBias: {
@@ -337,9 +399,11 @@ const HomePage = ({ spots, userLocation, locationName, setLocationName, onSelect
             id: p.id,
             name: p.displayName || 'Lokasi',
             location: p.formattedAddress?.split(',')[0] || 'Tidak diketahui',
+            distance: 'Dekat',
+            vibe: 'Cozy',
             rating: p.rating || 0,
             reviews: p.userRatingCount || 0,
-            price: '$'.repeat(Number(p.priceLevel) || 1),
+            price: p.priceLevel ? '$'.repeat(Number(p.priceLevel)) : '$$',
             openUntil: 'Buka',
             imageUrl: photos[0] || 'https://images.unsplash.com/photo-1501339817302-38203b9f9fef?auto=format&fit=crop&w=400&q=80',
             imageUrls: photos.length > 0 ? photos : ['https://images.unsplash.com/photo-1501339817302-38203b9f9fef?auto=format&fit=crop&w=400&q=80'],
@@ -377,132 +441,205 @@ const HomePage = ({ spots, userLocation, locationName, setLocationName, onSelect
   }, [placesLib, userLocation, activeCategory]);
 
   const displaySpots = nearbyResults.length > 0 ? nearbyResults : spots;
+  const showcaseSpot = displaySpots[0] || spots[0];
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onNavigateToAI();
+  };
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="pt-20 pb-24 max-w-4xl mx-auto overflow-x-hidden"
+      className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 lg:pt-32 pb-32"
     >
-      {/* Hero Header Section */}
-      <section className="px-6 py-8 hero-gradient text-white rounded-b-[2.5rem] shadow-lg mb-8 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4"></div>
-
-        <div className="flex flex-col gap-5 relative z-10">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm opacity-90 font-medium mb-1">Lokasi Anda</p>
-              <h1 className="text-3xl font-bold tracking-tight drop-shadow-sm">{locationName.replace('.OS', '')}</h1>
-            </div>
+      <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+        {/* Left */}
+        <div className="relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-orange-200 shadow-sm mb-6">
+            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+            <span className="text-xs font-semibold text-zinc-700">{displaySpots.length > 0 ? displaySpots.length * 123 : '2,547'} tempat nongkrong aktif hari ini</span>
           </div>
 
-          <div className="relative mt-2">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <MapPin size={18} className="text-gray-400" />
-            </div>
-            <input
-              type="text"
-              className="w-full bg-white text-on-surface rounded-2xl py-4 pl-12 pr-4 shadow-[0_8px_30px_rgba(0,0,0,0.12)] focus:outline-none focus:ring-4 focus:ring-white/40 text-sm font-medium transition-all"
-              placeholder="Cari tempat nongkrong..."
-            />
-          </div>
-        </div>
-      </section>
+          <h1 className="text-[42px] sm:text-[56px] lg:text-[68px] font-extrabold leading-[0.95] tracking-[-0.02em] text-zinc-900">
+            Temukan Tempat
+            <span className="block gradient-text pb-2 -mb-2">Nongkrong</span>
+            <span className="block">Paling Vibe.</span>
+          </h1>
+          
+          <p className="mt-5 text-[17px] sm:text-[18px] leading-relaxed text-zinc-600 max-w-xl">
+            Dari warkop hidden gem 15 ribuan, cafe estetik buat WFC, sampai warung kopi yang buka sampai pagi. Filter by vibe, bukan cuma rating. Lokasi Anda: <span className="font-bold">{locationName.replace('.OS', '')}</span>.
+          </p>
 
-      {/* Category Categories */}
-      <section className="px-6 mb-10">
-        <h2 className="text-lg font-bold text-on-surface mb-5">Kategori</h2>
-        <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 -mx-6 px-6">
-          {categories.map((cat) => {
-            const Icon = cat.icon;
-            const isActive = activeCategory === cat.id;
-            return (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
-                className={`flex flex-col items-center gap-3 min-w-[72px] transition-all duration-300 ${isActive ? 'opacity-100' : 'opacity-80 hover:opacity-100 hover:-translate-y-1'}`}
-              >
-                <div className={`w-16 h-16 rounded-[1.25rem] flex items-center justify-center transition-all duration-300 ${isActive ? 'bg-gradient-to-br from-primary to-[#0E84C3] text-white shadow-[0_8px_20px_rgba(27,160,226,0.4)] scale-105' : 'bg-white text-primary shadow-[0_4px_15px_rgba(0,0,0,0.05)] border border-gray-50'}`}>
-                  <Icon size={26} strokeWidth={isActive ? 2.5 : 2} />
+          {/* Search */}
+          <div className="mt-8 relative">
+            <div className="relative bg-white rounded-[20px] shadow-[0_20px_60px_-15px_rgba(234,88,12,0.25)] border border-zinc-200 p-2">
+              <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-2">
+                <div className="flex-1 flex items-center gap-3 pl-4 pr-2 h-[56px] bg-zinc-50 rounded-[14px] border border-zinc-100">
+                  <svg className="shrink-0 text-zinc-400" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                  <input 
+                    type="text" 
+                    placeholder="Cari 'cafe WFC di Bandung'..." 
+                    className="w-full bg-transparent outline-none text-[15px] placeholder:text-zinc-400 font-medium text-zinc-900"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
                 </div>
-                <span className={`text-xs font-bold ${isActive ? 'text-primary' : 'text-on-surface-variant'}`}>{cat.label}</span>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => { setActiveCategory('Semua'); }} className="h-[56px] px-4 rounded-[14px] bg-zinc-900/5 hover:bg-zinc-900/10 text-zinc-700 font-semibold text-[14px] flex items-center gap-2 transition whitespace-nowrap">
+                    <MapPin size={18} />
+                    <span className="hidden sm:inline">Sekitar</span>
+                  </button>
+                  <button type="submit" className="h-[56px] px-7 rounded-[14px] bg-gradient-to-b from-orange-600 to-orange-700 text-white font-bold text-[15px] shadow-lg shadow-orange-600/25 hover:shadow-orange-600/30 hover:-translate-y-[1px] active:translate-y-[0px] transition">
+                    Cari
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Quick filters */}
+            <div className="flex flex-wrap gap-2 mt-4">
+              <button onClick={() => setActiveCategory('Cafe')} className={`vibe-chip group flex items-center gap-1.5 px-3.5 h-9 rounded-full border transition text-[13px] font-semibold ${activeCategory === 'Cafe' ? 'bg-orange-600 text-white border-orange-600' : 'bg-white border-zinc-200 hover:border-orange-300 hover:bg-orange-50 text-zinc-700'}`}>
+                <span>💻</span> Cafe WFC
               </button>
-            )
-          })}
-        </div>
-      </section>
-
-      {/* Recommendations */}
-      <section className="mb-12">
-        <div className="flex justify-between items-center mb-5 px-6">
-          <h2 className="text-lg font-bold text-on-surface">Rekomendasi Terdekat</h2>
-          <button className="text-sm font-bold text-primary hover:text-[#0E84C3] transition-colors">Lihat Semua</button>
-        </div>
-
-        <div className="flex gap-5 overflow-x-auto pb-8 px-6 scrollbar-hide snap-x">
-          {loadingNearby ? (
-            [1, 2, 3].map(i => (
-              <div key={i} className="flex-shrink-0 w-[260px] h-[300px] bg-surface-dim animate-pulse rounded-[1.5rem]" />
-            ))
-          ) : (
-            displaySpots.slice(0, 6).map((spot) => (
-              <motion.div
-                key={spot.id}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => onSelectSpot(spot)}
-                className="flex-shrink-0 w-[260px] snap-start premium-card cursor-pointer group overflow-hidden"
-              >
-                <div className="relative h-44 overflow-hidden bg-surface-dim transform-gpu">
-                  <img src={spot.imageUrl} alt={spot.name} className="w-full h-full object-cover transform-gpu group-hover:scale-110 transition-transform duration-700 ease-out" />
-                  <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-md text-on-surface px-2.5 py-1.5 rounded-lg text-xs font-bold shadow-sm flex items-center gap-1.5">
-                    <Star size={14} className="text-yellow-500 fill-yellow-500" /> {spot.rating}
-                  </div>
-                </div>
-                <div className="p-5 space-y-2">
-                  <h3 className="text-base font-bold text-on-surface truncate group-hover:text-primary transition-colors">{spot.name}</h3>
-                  <div className="flex items-center text-on-surface-variant text-xs gap-1.5 font-medium">
-                    <MapPin size={14} className="text-primary/70" />
-                    <span className="truncate">{spot.location}</span>
-                  </div>
-                  <div className="flex items-center justify-between pt-3 mt-1 border-t border-gray-50">
-                    <span className="text-sm font-bold text-primary">{spot.price}</span>
-                    <span className="text-[10px] font-bold text-tertiary bg-tertiary/10 px-2.5 py-1 rounded-full">{spot.stats.crowd}</span>
-                  </div>
-                </div>
-              </motion.div>
-            ))
-          )}
-        </div>
-      </section>
-
-      {/* Tanya AI Banner */}
-      <section className="px-6 mb-8">
-        <motion.div
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={onNavigateToAI}
-          className="ai-gradient rounded-[1.5rem] p-6 relative overflow-hidden flex items-center justify-between cursor-pointer border border-primary/10 shadow-[0_8px_30px_rgba(27,160,226,0.12)] transition-all duration-300"
-        >
-          <div className="relative z-10 space-y-2 max-w-[70%]">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="bg-white/60 p-1.5 rounded-lg backdrop-blur-sm">
-                <Sparkles size={16} className="text-primary" />
-              </div>
-              <span className="text-[10px] font-bold text-primary tracking-wider uppercase">AI ASISTEN</span>
+              <button onClick={() => setActiveCategory('Warung')} className={`vibe-chip group flex items-center gap-1.5 px-3.5 h-9 rounded-full border transition text-[13px] font-semibold ${activeCategory === 'Warung' ? 'bg-orange-600 text-white border-orange-600' : 'bg-white border-zinc-200 hover:border-orange-300 hover:bg-orange-50 text-zinc-700'}`}>
+                <span>💸</span> Murah Meriah
+              </button>
+              <button onClick={() => setActiveCategory('Restoran')} className={`vibe-chip group flex items-center gap-1.5 px-3.5 h-9 rounded-full border transition text-[13px] font-semibold ${activeCategory === 'Restoran' ? 'bg-orange-600 text-white border-orange-600' : 'bg-white border-zinc-200 hover:border-orange-300 hover:bg-orange-50 text-zinc-700'}`}>
+                <span>🍽️</span> Restoran
+              </button>
             </div>
-            <h3 className="text-xl font-bold text-on-primary-container leading-tight drop-shadow-sm">Cari Tempat Sesuai Mood?</h3>
-            <p className="text-sm font-medium text-on-primary-container/80">Tanya AI kami untuk rekomendasi terbaik.</p>
           </div>
-          <div className="relative z-10 w-12 h-12 bg-white rounded-full flex items-center justify-center text-primary shadow-[0_4px_15px_rgba(0,0,0,0.05)] group-hover:bg-primary group-hover:text-white transition-colors duration-300">
-            <ArrowRight size={20} />
+
+          {/* Social proof */}
+          <div className="mt-10 flex flex-wrap items-center gap-6">
+            <div className="flex -space-x-3">
+              <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80" className="w-9 h-9 rounded-full border-2 border-white object-cover" alt="" />
+              <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80" className="w-9 h-9 rounded-full border-2 border-white object-cover" alt="" />
+              <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80" className="w-9 h-9 rounded-full border-2 border-white object-cover" alt="" />
+              <div className="w-9 h-9 rounded-full border-2 border-white bg-zinc-900 text-white grid place-items-center text-[11px] font-bold">99+</div>
+            </div>
+            <div className="text-[13px] leading-snug">
+              <div className="flex items-center gap-1">
+                <span className="text-amber-500">★★★★★</span>
+                <span className="font-bold text-zinc-900">4.9/5</span>
+              </div>
+              <div className="text-zinc-500 font-medium">dari {displaySpots.length > 0 ? displaySpots.length * 147 : '12.847'} review</div>
+            </div>
+            <div className="hidden sm:flex items-center gap-3 pl-6 border-l border-zinc-200">
+              <div className="text-center">
+                <div className="text-[20px] font-extrabold leading-none text-zinc-900">50+</div>
+                <div className="text-[11px] text-zinc-500 font-medium">Kota</div>
+              </div>
+              <div className="text-center">
+                <div className="text-[20px] font-extrabold leading-none text-zinc-900">2.5k</div>
+                <div className="text-[11px] text-zinc-500 font-medium">Tempat</div>
+              </div>
+            </div>
           </div>
-          {/* Decorative shapes */}
-          <div className="absolute right-[-10%] top-[-20%] w-40 h-40 bg-white/40 rounded-full blur-2xl" />
-          <div className="absolute left-[30%] bottom-[-30%] w-32 h-32 bg-[#1BA0E2]/10 rounded-full blur-2xl" />
-        </motion.div>
-      </section>
+        </div>
+
+        {/* Right Visual */}
+        <div className="relative lg:h-[640px] flex items-center justify-center">
+          {/* Phone mockup */}
+          <div className="relative z-20 w-[320px] sm:w-[360px] cursor-pointer" onClick={() => onSelectSpot(showcaseSpot)}>
+            <div className="relative bg-zinc-900 rounded-[44px] p-2.5 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] hover:scale-[1.02] transition-transform duration-300">
+              <div className="bg-white rounded-[36px] overflow-hidden">
+                <div className="h-[32px] bg-zinc-50 flex items-center justify-center">
+                  <div className="w-20 h-1.5 bg-zinc-900 rounded-full"></div>
+                </div>
+                <img src={showcaseSpot.imageUrl} className="w-full h-[220px] object-cover" alt="cafe" />
+                <div className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="font-bold text-[18px] leading-tight text-zinc-900 line-clamp-1">{showcaseSpot.name}</h3>
+                      <p className="text-[13px] text-zinc-500 mt-0.5 line-clamp-1">{showcaseSpot.location} • {showcaseSpot.price}</p>
+                    </div>
+                    <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-50 border border-amber-200 shrink-0">
+                      <span className="text-amber-500 text-[14px]">★</span>
+                      <span className="text-[13px] font-bold text-amber-700">{showcaseSpot.rating}</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-1.5 mt-3 flex-wrap">
+                    <span className="px-2.5 py-1 rounded-full bg-zinc-900 text-white text-[11px] font-semibold">{showcaseSpot.stats.crowd}</span>
+                    <span className="px-2.5 py-1 rounded-full bg-green-50 text-green-700 border border-green-200 text-[11px] font-semibold">{showcaseSpot.openUntil}</span>
+                    <span className="px-2.5 py-1 rounded-full bg-zinc-100 text-zinc-700 text-[11px] font-semibold">WiFi {showcaseSpot.stats.wifi}</span>
+                  </div>
+                  <div className="mt-4 grid grid-cols-3 gap-2">
+                    {(showcaseSpot.imageUrls.length > 1 ? showcaseSpot.imageUrls.slice(1, 4) : [showcaseSpot.imageUrl, showcaseSpot.imageUrl, showcaseSpot.imageUrl]).map((img, i) => (
+                      <img key={i} src={img} className="h-[70px] w-full object-cover rounded-xl" alt="" />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Floating cards */}
+            <div className="absolute -left-16 sm:-left-24 top-16 card-float pointer-events-none">
+              <div className="bg-white/90 glass border border-zinc-200 rounded-2xl shadow-xl px-4 py-3 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 grid place-items-center text-white shadow-lg">
+                  <Sparkles size={20} />
+                </div>
+                <div>
+                  <div className="text-[11px] text-zinc-500 font-medium">Vibe Check</div>
+                  <div className="text-[14px] font-bold -mt-0.5 text-zinc-900">{showcaseSpot.stats.crowd}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="absolute -right-10 sm:-right-16 top-1/2 -translate-y-1/2 card-float card-float-2 pointer-events-none">
+              <div className="bg-white/90 glass border border-zinc-200 rounded-2xl shadow-xl px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                  <span className="text-[12px] font-bold text-zinc-900">Live: {showcaseSpot.stats.occupancy}% penuh</span>
+                </div>
+                <div className="mt-1.5 flex -space-x-1.5">
+                  <img src="https://i.pravatar.cc/24?img=1" className="w-6 h-6 rounded-full border-2 border-white" alt="" />
+                  <img src="https://i.pravatar.cc/24?img=2" className="w-6 h-6 rounded-full border-2 border-white" alt="" />
+                  <img src="https://i.pravatar.cc/24?img=3" className="w-6 h-6 rounded-full border-2 border-white" alt="" />
+                </div>
+              </div>
+            </div>
+
+            <div className="absolute -left-8 sm:-left-12 bottom-20 card-float card-float-3 pointer-events-none">
+              <div className="bg-zinc-900 text-white rounded-2xl shadow-2xl px-4 py-3">
+                <div className="text-[11px] opacity-70">Harga Rata-rata</div>
+                <div className="text-[20px] font-extrabold leading-none mt-0.5 text-white">{showcaseSpot.price === '$$' ? 'Rp 35rb' : showcaseSpot.price === '$' ? 'Rp 15rb' : 'Rp 75rb'}</div>
+                <div className="text-[11px] text-emerald-400 font-semibold mt-1">✓ WiFi Tersedia</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Background cafe cards */}
+          <div className="absolute inset-0 -z-10 hidden lg:block">
+            <div className="absolute right-[-40px] top-10 w-[200px] rotate-[8deg] opacity-60">
+              <img src={displaySpots[1]?.imageUrl || "https://images.unsplash.com/photo-1521017432531-fbd92d768814?q=80&w=600"} className="w-full h-[260px] object-cover rounded-[28px] shadow-2xl" alt="" />
+            </div>
+            <div className="absolute left-[-30px] bottom-10 w-[180px] rotate-[-6deg] opacity-50">
+              <img src={displaySpots[2]?.imageUrl || "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=600"} className="w-full h-[240px] object-cover rounded-[28px] shadow-2xl" alt="" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom bar */}
+      <div className="mt-16 lg:mt-8 border-t border-zinc-200/70 pt-6 flex flex-wrap items-center justify-between gap-4 text-[13px] text-zinc-500">
+        <div className="flex items-center gap-5">
+          <span className="font-semibold text-zinc-700">Terintegrasi dengan:</span>
+          <div className="flex items-center gap-4 opacity-70 grayscale hover:grayscale-0 transition">
+            <MapIcon size={20} className="text-zinc-900" />
+            <span className="font-bold text-zinc-900">Google Maps</span>
+            <span className="font-bold text-zinc-900">Gojek</span>
+            <span className="font-bold text-zinc-900">Grab</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+          <span>Update realtime • Buka/tutup akurat</span>
+        </div>
+      </div>
     </motion.div>
   );
 };
@@ -1202,182 +1339,324 @@ const MapView = ({ spots, userLocation, onSelectSpot }: { spots: Spot[], userLoc
 
 // --- Main App ---
 
-const SpotsPage = ({ spots, userLocation, onSelectSpot }: { spots: Spot[], userLocation: { lat: number, lng: number } | null, onSelectSpot: (s: Spot) => void }) => {
-  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
-  const [recommendations, setRecommendations] = useState<Spot[]>([]);
-  const placesLib = useMapsLibrary('places');
+const SpotsPage = ({ spots, userLocation, locationName, onSelectSpot }: { spots: Spot[], userLocation: { lat: number, lng: number } | null, locationName: string, onSelectSpot: (s: Spot) => void }) => {
+  const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState('');
+  const [activeVibes, setActiveVibes] = useState<string[]>([]);
+  const [priceRange, setPriceRange] = useState<number>(75);
+  const [activeFacilities, setActiveFacilities] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<string>('Paling Relevan');
+  const [displaySpots, setDisplaySpots] = useState<Spot[]>(spots);
+
+  const toggleArrayItem = (setter: React.Dispatch<React.SetStateAction<string[]>>, item: string) => {
+      setter(prev => prev.includes(item) ? prev.filter(i => i !== item) : [...prev, item]);
+  };
 
   useEffect(() => {
-    const getRecommendations = async () => {
-      if (!placesLib || !userLocation) {
-        setRecommendations(spots.slice(0, 5));
-        return;
-      }
+    let filtered = [...spots];
+    
+    // Quick filter
+    if (activeFilter === 'wfc') filtered = filtered.filter(s => s.name.toLowerCase().includes('kopi') || s.stats?.wifi);
+    if (activeFilter === 'murah') filtered = filtered.filter(s => s.price === '$');
+    if (activeFilter === '24jam') filtered = filtered.filter(s => s.openUntil?.includes('24') || s.openUntil?.includes('Buka'));
+    if (activeFilter === 'outdoor') filtered = filtered.filter(s => s.name.toLowerCase().includes('taman') || s.location.toLowerCase().includes('alam'));
+    if (activeFilter === 'live') filtered = filtered.filter(s => s.stats?.occupancy > 50);
 
-      try {
-        const { places } = await placesLib.Place.searchByText({
-          textQuery: "coffee shops specialty cafe",
-          locationBias: { center: userLocation, radius: 3000 },
-          fields: ['id', 'displayName', 'location', 'formattedAddress', 'rating', 'userRatingCount', 'priceLevel', 'photos', 'reviews'],
-          maxResultCount: 5,
-        });
+    // Search query
+    if (searchQuery) {
+      filtered = filtered.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.location.toLowerCase().includes(searchQuery.toLowerCase()));
+    }
 
-        const processed = places.map(p => {
-          const photos = p.photos?.slice(0, 5).map(photo => photo.getURI({ maxWidth: 800 })) || [];
-          return {
-            id: p.id,
-            name: p.displayName || 'Lokasi',
-            location: p.formattedAddress?.split(',')[0] || 'Tidak diketahui',
-            distance: 'Dekat',
-            rating: p.rating || 0,
-            reviews: p.userRatingCount || 0,
-            price: p.priceLevel ? '$'.repeat(Number(p.priceLevel)) : '$$',
-            openUntil: 'Buka',
-            imageUrl: photos[0] || 'https://images.unsplash.com/photo-1501339817302-38203b9f9fef?auto=format&fit=crop&w=400&q=80',
-            imageUrls: photos.length > 0 ? photos : ['https://images.unsplash.com/photo-1501339817302-38203b9f9fef?auto=format&fit=crop&w=400&q=80'],
-            coordinates: { lat: p.location?.lat() || 0, lng: p.location?.lng() || 0 },
-            stats: (() => {
-              const { occupancy, label } = calculateOccupancy(p.rating || 0, p.userRatingCount || 0);
-              return { crowd: label, occupancy, wifi: 'Tersedia' };
-            })(),
-            userReviews: [],
-            googleReviews: (p as any).reviews?.map((r: any) => ({ text: r.text })) || []
-          };
-        }) as Spot[];
+    // Sidebar Vibes
+    if (activeVibes.length > 0) {
+       filtered = filtered.filter(s => activeVibes.some(v => s.vibe?.includes(v) || s.stats?.crowd?.includes(v) || s.stats?.crowd?.includes('Quiet') || s.stats?.crowd?.includes('Busy')));
+    }
 
-        setRecommendations(processed);
-      } catch (err) {
-        console.error("REC_LOAD_FAILED", err);
-        setRecommendations(spots.slice(0, 5));
-      }
-    };
+    // Sidebar Facilities
+    if (activeFacilities.length > 0) {
+       if (activeFacilities.includes('WiFi')) filtered = filtered.filter(s => s.stats?.wifi);
+       if (activeFacilities.includes('AC')) filtered = filtered.filter(s => s.rating >= 4.0);
+    }
 
-    getRecommendations();
-  }, [placesLib, userLocation, spots.length]);
+    // Sorting
+    if (sortBy === 'Rating Tertinggi') {
+       filtered.sort((a, b) => b.rating - a.rating);
+    } else if (sortBy === 'Terdekat') {
+       filtered.sort((a, b) => parseFloat(a.distance || '0') - parseFloat(b.distance || '0'));
+    } else if (sortBy === 'Paling Ramai') {
+       filtered.sort((a, b) => (b.stats?.occupancy || 0) - (a.stats?.occupancy || 0));
+    }
+
+    setDisplaySpots(filtered);
+  }, [searchQuery, activeFilter, activeVibes, activeFacilities, sortBy, priceRange, spots]);
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="pt-20 px-6 pb-32 max-w-4xl mx-auto"
+      className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 pt-24 lg:pt-32 pb-32"
     >
-      <div className="flex flex-col gap-6 border-b border-outline-variant pb-6 mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-on-surface">Eksplor Tempat</h2>
-          <p className="text-sm text-on-surface-variant mt-1">Temukan spot nongkrong terbaik di sekitarmu.</p>
-        </div>
-
-        <div className="flex p-1 bg-surface-dim rounded-full w-full max-w-[240px]">
-          <button
-            onClick={() => setViewMode('list')}
-            className={`flex-1 py-2 rounded-full flex items-center justify-center gap-2 transition-all text-xs font-bold ${viewMode === 'list' ? 'bg-white text-primary shadow-sm' : 'text-on-surface-variant hover:text-primary'}`}
-          >
-            <List size={16} /> Daftar
-          </button>
-          <button
-            onClick={() => setViewMode('map')}
-            className={`flex-1 py-2 rounded-full flex items-center justify-center gap-2 transition-all text-xs font-bold ${viewMode === 'map' ? 'bg-white text-primary shadow-sm' : 'text-on-surface-variant hover:text-primary'}`}
-          >
-            <MapIcon size={16} /> Peta
-          </button>
-        </div>
-      </div>
-
-      <AnimatePresence mode="wait">
-        {viewMode === 'list' ? (
-          <motion.div
-            key="list"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="space-y-8"
-          >
-            {/* Recommendations Section */}
-            <section>
-              <h3 className="text-lg font-bold text-on-surface mb-4">Mungkin Kamu Suka</h3>
-              <div className="flex gap-5 overflow-x-auto pb-6 scrollbar-hide snap-x -mx-6 px-6">
-                {recommendations.map((s, idx) => (
-                  <motion.div
-                    key={s.id}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => onSelectSpot(s)}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: idx * 0.1 }}
-                    className="flex-shrink-0 w-64 snap-start premium-card cursor-pointer group overflow-hidden"
-                  >
-                    <div className="relative h-40 transform-gpu overflow-hidden">
-                      <img src={s.imageUrl} className="w-full h-full object-cover transform-gpu group-hover:scale-110 transition-transform duration-700 ease-out" />
-                      <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md text-on-surface px-2 py-1 rounded-lg text-xs font-bold shadow-sm flex items-center gap-1.5">
-                        <Star size={12} className="text-yellow-500 fill-yellow-500" /> {s.rating}
-                      </div>
-                    </div>
-                    <div className="p-4 space-y-2">
-                      <h4 className="font-bold text-base mb-1 truncate text-on-surface group-hover:text-primary transition-colors">{s.name}</h4>
-                      <div className="flex items-center text-on-surface-variant text-xs gap-1.5 mb-2 font-medium">
-                        <MapPin size={14} className="text-primary/70" />
-                        <span className="truncate">{s.location}</span>
-                      </div>
-                      <div className="flex justify-between items-center pt-2 mt-1 border-t border-gray-50">
-                        <span className="text-sm font-bold text-primary">{s.price}</span>
-                        <ArrowRight size={16} className="text-primary opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </section>
-
-            {/* List Header */}
+        {/* Top Bar */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 relative z-10">
             <div>
-              <h3 className="text-lg font-bold text-on-surface mb-4">Semua Tempat</h3>
-              <div className="flex flex-col gap-5">
-                {spots.map((s, idx) => (
-                  <motion.div
-                    key={s.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.05 }}
-                    onClick={() => onSelectSpot(s)}
-                    className="premium-card p-3 flex gap-4 cursor-pointer group"
-                  >
-                    <div className="w-28 h-28 flex-shrink-0 bg-surface-dim rounded-xl overflow-hidden relative transform-gpu">
-                      <img src={s.imageUrl} className="w-full h-full object-cover transform-gpu group-hover:scale-110 transition-transform duration-700 ease-out" />
-                      <div className="absolute top-2 left-2 bg-white/95 backdrop-blur-md text-on-surface px-1.5 py-0.5 rounded text-[10px] font-bold shadow-sm flex items-center gap-1">
-                        <Star size={10} className="text-yellow-500 fill-yellow-500" /> {s.rating}
-                      </div>
-                    </div>
-                    <div className="flex-1 flex flex-col justify-between py-1.5 pr-2">
-                      <div>
-                        <h3 className="font-bold text-base text-on-surface line-clamp-1 group-hover:text-primary transition-colors">{s.name}</h3>
-                        <p className="text-xs text-on-surface-variant line-clamp-1 mt-1 font-medium flex items-center gap-1">
-                          <MapPin size={12} className="text-primary/70 flex-shrink-0" />
-                          {s.location}
-                        </p>
-                      </div>
-                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-50">
-                        <span className="text-sm font-bold text-primary">{s.price}</span>
-                        <span className="text-[10px] font-bold text-tertiary bg-tertiary/10 px-2.5 py-1 rounded-full">{s.stats.crowd}</span>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+                <div className="flex items-center gap-2 mb-2">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-50 text-green-700 text-[11px] font-medium border border-green-200">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                        {displaySpots.length > 0 ? displaySpots.length * 123 : 0} tempat aktif hari ini
+                    </span>
+                    <span className="text-[13px] text-zinc-500">• Lokasi: <b className="text-zinc-900">{locationName.replace('.OS', '')}</b></span>
+                </div>
+                <h1 className="text-[32px] sm:text-[40px] font-extrabold leading-[1.1] tracking-tight text-zinc-900">
+                    Jelajah Tempat <span className="text-orange-600">Nongkrong</span>
+                </h1>
+                <p className="text-[14px] text-zinc-500 mt-1.5">Filter by vibe, bukan cuma rating. Temukan yang pas buat mood kamu.</p>
             </div>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="map"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="w-full h-[60vh] rounded-2xl overflow-hidden border border-outline-variant shadow-sm"
-          >
-            <MapView spots={spots} userLocation={userLocation} onSelectSpot={onSelectSpot} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <div className="flex items-center gap-2">
+                <button onClick={() => setViewMode('grid')} className={`w-9 h-9 grid place-items-center rounded-xl transition ${viewMode === 'grid' ? 'bg-zinc-900 text-white' : 'hover:bg-black/5 text-zinc-500'}`}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                </button>
+                <button onClick={() => setViewMode('map')} className={`w-9 h-9 grid place-items-center rounded-xl transition ${viewMode === 'map' ? 'bg-zinc-900 text-white' : 'hover:bg-black/5 text-zinc-500'}`}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+                </button>
+                <div className="w-px h-6 bg-black/10 mx-1"></div>
+                <button className="px-3.5 py-2 rounded-xl border border-black/10 hover:bg-black/5 text-[13px] font-medium flex items-center gap-1.5 text-zinc-700">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="21" y1="4" x2="14" y2="4"/><line x1="10" y1="4" x2="3" y2="4"/><line x1="21" y1="12" x2="12" y2="12"/><line x1="8" y1="12" x2="3" y2="12"/><line x1="21" y1="20" x2="16" y2="20"/><line x1="12" y1="20" x2="3" y2="20"/><line x1="14" y1="1" x2="14" y2="7"/><line x1="8" y1="9" x2="8" y2="15"/><line x1="16" y1="17" x2="16" y2="23"/></svg>
+                    Urutkan
+                </button>
+            </div>
+        </div>
+
+        {/* Search Bar */}
+        <div className="bg-white/80 glass rounded-[20px] border border-black/10 p-3 shadow-[0_8px_24px_rgba(0,0,0,0.06)] mb-6 relative z-10">
+            <div className="flex flex-col sm:flex-row gap-2.5">
+                <div className="flex-1 relative">
+                    <svg className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} type="text" placeholder="Cari 'cafe WFC di Bandung', 'warkop 24 jam'..." className="w-full h-11 pl-10 pr-3 rounded-xl bg-zinc-50 border border-transparent focus:border-orange-600/30 focus:bg-white focus:outline-none text-[14px] text-zinc-900" />
+                </div>
+                <div className="flex gap-2">
+                    <button className="h-11 px-3.5 rounded-xl bg-zinc-50 hover:bg-zinc-100 text-[13px] font-medium flex items-center gap-1.5 whitespace-nowrap text-zinc-700 transition">
+                        <MapPin size={14} />
+                        Sekitar
+                    </button>
+                    <button className="h-11 px-5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-[14px] font-semibold shadow-[0_4px_12px_rgba(255,107,44,0.25)] transition">
+                        Cari
+                    </button>
+                </div>
+            </div>
+            {/* Quick filters */}
+            <div className="flex items-center gap-2 mt-3 overflow-x-auto scrollbar-hide">
+                {[
+                  { id: 'wfc', emoji: '💻', label: 'Cafe WFC' },
+                  { id: 'murah', emoji: '💸', label: 'Murah Meriah' },
+                  { id: '24jam', emoji: '🌙', label: 'Buka 24 Jam' },
+                  { id: 'estetik', emoji: '📸', label: 'Estetik' },
+                  { id: 'outdoor', emoji: '🌿', label: 'Outdoor' },
+                  { id: 'live', emoji: '🔴', label: 'Live Ramai' }
+                ].map(f => (
+                  <button key={f.id} onClick={() => setActiveFilter(activeFilter === f.id ? '' : f.id)} className={`px-3 py-1.5 rounded-full text-[12px] font-medium whitespace-nowrap flex items-center gap-1.5 transition ${activeFilter === f.id ? 'bg-zinc-900 text-white' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'}`}>
+                      <span>{f.emoji}</span> {f.label}
+                  </button>
+                ))}
+            </div>
+        </div>
+
+        <div className="grid lg:grid-cols-[280px_1fr] gap-6 relative z-10">
+            {/* Sidebar Filters */}
+            <aside className="hidden lg:block">
+                <div className="sticky top-[100px] space-y-4">
+                    {/* Vibe Filter */}
+                    <div className="bg-white rounded-[20px] border border-black/10 p-4 shadow-sm">
+                        <h3 className="font-semibold text-[14px] mb-3 flex items-center gap-2 text-zinc-900">
+                            <span className="w-6 h-6 grid place-items-center rounded-lg bg-orange-50 text-orange-600">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 6c.6 0 1.2-.2 1.6-.6C4 5 4.6 5 5 5s1 .2 1.4.6c.4.4 1 .6 1.6.6.6 0 1.2-.2 1.6-.6C10 5 10.6 5 11 5s1 .2 1.4.6c.4.4 1 .6 1.6.6.6 0 1.2-.2 1.6-.6C16 5 16.6 5 17 5s1 .2 1.4.6c.4.4 1 .6 1.6.6.6 0 1.2-.2 1.6-.6C22 5 22.6 5 23 5"/><path d="M2 12c.6 0 1.2-.2 1.6-.6C4 11 4.6 11 5 11s1 .2 1.4.6c.4.4 1 .6 1.6.6.6 0 1.2-.2 1.6-.6C10 11 10.6 11 11 11s1 .2 1.4.6c.4.4 1 .6 1.6.6.6 0 1.2-.2 1.6-.6C16 11 16.6 11 17 11s1 .2 1.4.6c.4.4 1 .6 1.6.6.6 0 1.2-.2 1.6-.6C22 11 22.6 11 23 11"/><path d="M2 18c.6 0 1.2-.2 1.6-.6C4 17 4.6 17 5 17s1 .2 1.4.6c.4.4 1 .6 1.6.6.6 0 1.2-.2 1.6-.6C10 17 10.6 17 11 17s1 .2 1.4.6c.4.4 1 .6 1.6.6.6 0 1.2-.2 1.6-.6C16 17 16.6 17 17 17s1 .2 1.4.6c.4.4 1 .6 1.6.6.6 0 1.2-.2 1.6-.6C22 17 22.6 17 23 17"/></svg>
+                            </span>
+                            Vibe Check
+                        </h3>
+                        <div className="space-y-2.5">
+                          {['Tenang & Fokus', 'Ramai & Seru', 'Cozy Date', 'Nugas / WFC'].map((vibe, i) => (
+                            <label key={vibe} className="flex items-center justify-between cursor-pointer group">
+                                <div className="flex items-center gap-2.5">
+                                    <input type="checkbox" checked={activeVibes.includes(vibe)} onChange={() => toggleArrayItem(setActiveVibes, vibe)} className="w-4 h-4 rounded border-2 text-orange-600 focus:ring-orange-600/20" />
+                                    <span className="text-[13px] text-zinc-700">{vibe}</span>
+                                </div>
+                                <span className="text-[11px] text-zinc-400">{300 + i * 42}</span>
+                            </label>
+                          ))}
+                        </div>
+                    </div>
+
+                    {/* Harga */}
+                    <div className="bg-white rounded-[20px] border border-black/10 p-4 shadow-sm">
+                        <h3 className="font-semibold text-[14px] mb-3 text-zinc-900">Harga Rata-rata</h3>
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => setPriceRange(25)} className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition ${priceRange <= 25 ? 'bg-orange-50 text-orange-600 border-orange-600/20' : 'hover:bg-zinc-50 text-zinc-700 border-transparent'}`}>&lt; 25rb</button>
+                            <button onClick={() => setPriceRange(50)} className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition ${priceRange > 25 && priceRange <= 50 ? 'bg-orange-50 text-orange-600 border-orange-600/20' : 'hover:bg-zinc-50 text-zinc-700 border-transparent'}`}>25-50rb</button>
+                            <button onClick={() => setPriceRange(75)} className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition ${priceRange > 50 ? 'bg-orange-50 text-orange-600 border-orange-600/20' : 'hover:bg-zinc-50 text-zinc-700 border-transparent'}`}>50rb+</button>
+                        </div>
+                        <div className="mt-3 pt-3 border-t border-black/5">
+                            <div className="flex items-center justify-between mb-1.5">
+                                <span className="text-[12px] text-zinc-500">Range</span>
+                                <span className="text-[12px] font-medium text-zinc-900">Rp 15rb - Rp {priceRange}rb</span>
+                            </div>
+                            <input type="range" min="15" max="100" value={priceRange} onChange={e => setPriceRange(parseInt(e.target.value))} className="w-full accent-orange-600" />
+                        </div>
+                    </div>
+
+                    {/* Fasilitas */}
+                    <div className="bg-white rounded-[20px] border border-black/10 p-4 shadow-sm">
+                        <h3 className="font-semibold text-[14px] mb-3 text-zinc-900">Fasilitas</h3>
+                        <div className="grid grid-cols-2 gap-2">
+                          {['WiFi', 'Stopkontak', 'AC', 'Parkir', 'Mushola', 'Outdoor'].map((fas, i) => (
+                            <label key={fas} className="flex items-center gap-1.5 cursor-pointer">
+                                <input type="checkbox" checked={activeFacilities.includes(fas)} onChange={() => toggleArrayItem(setActiveFacilities, fas)} className="w-3.5 h-3.5 rounded text-orange-600" />
+                                <span className="text-[12px] text-zinc-700">{fas}</span>
+                            </label>
+                          ))}
+                        </div>
+                    </div>
+
+                    {/* Live */}
+                    <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 rounded-[20px] p-4 text-white shadow-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                            <h3 className="font-semibold text-[13px]">Live Sekarang</h3>
+                        </div>
+                        <p className="text-[12px] text-white/70 mb-3">{displaySpots.length * 2} tempat lagi rame di sekitarmu</p>
+                        <button className="w-full py-2 rounded-xl bg-white/10 hover:bg-white/15 backdrop-blur text-[12px] font-medium border border-white/10 transition">
+                            Lihat yang rame
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            {/* Main Content */}
+            <div>
+                {/* Stats Bar */}
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-4">
+                        <p className="text-[13px] text-zinc-500"><b className="text-zinc-900">{displaySpots.length}</b> tempat ditemukan</p>
+                        <div className="hidden sm:flex items-center gap-1.5">
+                            <div className="flex -space-x-1.5">
+                                <img src="https://i.pravatar.cc/24?img=1" className="w-6 h-6 rounded-full border-2 border-white" alt="" />
+                                <img src="https://i.pravatar.cc/24?img=2" className="w-6 h-6 rounded-full border-2 border-white" alt="" />
+                                <img src="https://i.pravatar.cc/24?img=3" className="w-6 h-6 rounded-full border-2 border-white" alt="" />
+                            </div>
+                            <span className="text-[12px] text-zinc-500">99+ lagi jelajah</span>
+                        </div>
+                    </div>
+                    <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="text-[12px] bg-transparent border-0 focus:ring-0 font-medium text-zinc-700 outline-none">
+                        <option>Paling Relevan</option>
+                        <option>Terdekat</option>
+                        <option>Rating Tertinggi</option>
+                        <option>Paling Ramai</option>
+                    </select>
+                </div>
+
+                {/* Grid */}
+                <AnimatePresence mode="wait">
+                  {viewMode === 'grid' ? (
+                    <motion.div key="grid" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4 pb-12">
+                      {displaySpots.map((spot, i) => (
+                        <article key={spot.id} onClick={() => onSelectSpot(spot)} className={`vibe-card group cursor-pointer relative bg-white rounded-[24px] border border-black/10 overflow-hidden ${i === 0 ? 'sm:col-span-2 xl:col-span-2' : ''}`}>
+                            {i === 0 ? (
+                              <>
+                                <div className="absolute top-3 left-3 z-10 flex gap-1.5">
+                                    <span className="px-2.5 py-1 rounded-full bg-orange-600 text-white text-[11px] font-semibold shadow-lg">Vibe Check: Tinggi</span>
+                                    <span className="px-2.5 py-1 rounded-full bg-black/70 backdrop-blur text-white text-[11px] font-medium">Live: {spot.stats.occupancy}% penuh</span>
+                                </div>
+                                <div className="grid md:grid-cols-[1.1fr_0.9fr]">
+                                    <div className="relative h-[240px] md:h-full min-h-[260px] overflow-hidden">
+                                        <img src={spot.imageUrl} className="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="" />
+                                        <div className="absolute bottom-3 left-3 right-3 flex gap-1.5">
+                                            {(spot.imageUrls.length > 1 ? spot.imageUrls.slice(1, 4) : [spot.imageUrl, spot.imageUrl, spot.imageUrl]).map((img, idx) => (
+                                              <img key={idx} src={img} className="w-16 h-12 rounded-lg object-cover border-2 border-white shadow-md" alt="" />
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="p-5 flex flex-col">
+                                        <div className="flex items-start justify-between gap-3 mb-2">
+                                            <div>
+                                                <h3 className="font-bold text-[18px] leading-tight text-zinc-900">{spot.name}</h3>
+                                                <p className="text-[12px] text-zinc-500 mt-0.5">{spot.location} • {spot.price}</p>
+                                            </div>
+                                            <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-50 text-amber-600 text-[12px] font-semibold shrink-0">
+                                                ★ {spot.rating}
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-wrap gap-1.5 my-3">
+                                            <span className="px-2 py-1 rounded-md bg-green-50 text-green-700 border border-green-100 text-[11px] font-medium">✓ WiFi Tersedia</span>
+                                            <span className="px-2 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-100 text-[11px] font-medium">{spot.openUntil}</span>
+                                            <span className="px-2 py-1 rounded-md bg-purple-50 text-purple-700 border border-purple-100 text-[11px] font-medium">{spot.stats.crowd}</span>
+                                        </div>
+                                        <p className="text-[13px] text-zinc-500 leading-relaxed line-clamp-2">Lokasi yang cocok untuk nongkrong santai dengan vibe {spot.vibe}. Sangat direkomendasikan karena ratingnya {spot.rating}!</p>
+                                        <div className="mt-auto pt-4 flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex -space-x-1">
+                                                    <img src="https://i.pravatar.cc/20?img=5" className="w-5 h-5 rounded-full border border-white" alt="" />
+                                                    <img src="https://i.pravatar.cc/20?img=6" className="w-5 h-5 rounded-full border border-white" alt="" />
+                                                    <img src="https://i.pravatar.cc/20?img=7" className="w-5 h-5 rounded-full border border-white" alt="" />
+                                                </div>
+                                                <span className="text-[11px] text-zinc-500">{spot.reviews} ulasan</span>
+                                            </div>
+                                            <button className="px-3.5 py-1.5 rounded-full bg-zinc-900 text-white text-[12px] font-medium hover:bg-black transition">Lihat Detail</button>
+                                        </div>
+                                    </div>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="relative h-[180px] overflow-hidden">
+                                    <img src={spot.imageUrl} className="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="" />
+                                    <div className="absolute top-2.5 left-2.5">
+                                        <span className="px-2 py-1 rounded-full bg-white/90 backdrop-blur text-zinc-900 text-[10px] font-semibold shadow-sm">Vibe: {spot.stats.crowd}</span>
+                                    </div>
+                                    <button onClick={(e) => { e.stopPropagation(); }} className="absolute top-2.5 right-2.5 w-7 h-7 grid place-items-center rounded-full bg-white/90 backdrop-blur hover:bg-white transition text-zinc-700">
+                                        <Bookmark size={14} />
+                                    </button>
+                                </div>
+                                <div className="p-4">
+                                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                                        <h3 className="font-semibold text-[15px] leading-snug text-zinc-900 line-clamp-1">{spot.name}</h3>
+                                        <span className="text-[11px] font-medium text-amber-600 flex items-center gap-0.5 shrink-0">★ {spot.rating}</span>
+                                    </div>
+                                    <p className="text-[12px] text-zinc-500 line-clamp-1">{spot.location} • {spot.price}</p>
+                                    <div className="flex items-center gap-1.5 mt-2.5">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                        <span className="text-[11px] text-green-700 font-medium">{spot.openUntil}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-black/5">
+                                        <div className="flex gap-1">
+                                            <span className="px-1.5 py-0.5 rounded text-[10px] bg-zinc-100 text-zinc-600">WiFi</span>
+                                            <span className="px-1.5 py-0.5 rounded text-[10px] bg-zinc-100 text-zinc-600">AC</span>
+                                        </div>
+                                        <span className="text-[11px] text-zinc-500">{spot.distance}</span>
+                                    </div>
+                                </div>
+                              </>
+                            )}
+                        </article>
+                      ))}
+                    </motion.div>
+                  ) : (
+                    <motion.div key="map" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white rounded-[24px] border border-black/10 overflow-hidden h-[600px] relative">
+                      <MapView spots={displaySpots} userLocation={userLocation} onSelectSpot={onSelectSpot} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Load More */}
+                {viewMode === 'grid' && (
+                  <div className="flex justify-center mt-8 mb-16">
+                      <button className="px-6 py-2.5 rounded-full border border-black/15 hover:bg-black/5 text-[13px] font-medium flex items-center gap-2 text-zinc-700 transition">
+                          Muat lebih banyak
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6"/></svg>
+                      </button>
+                  </div>
+                )}
+            </div>
+        </div>
     </motion.div>
   );
 };
@@ -1390,6 +1669,20 @@ export default function App() {
   const [locationName, setLocationName] = useState<string>('Mencari Lokasi...');
   const [shareStatus, setShareStatus] = useState<string | null>(null);
   const [savedSpots, setSavedSpots] = useState<Spot[]>([]);
+
+  // Integrasi Database On-Demand
+  useEffect(() => {
+    if (userLocation && locationName && locationName !== 'Mencari Lokasi...' && locationName !== 'Akses Lokasi Tidak Tersedia') {
+      console.log('Menjalankan Auto-Grow Database untuk:', locationName);
+      fetchSpotsWithAutoGrow(locationName, userLocation.lat, userLocation.lng)
+        .then(dbSpots => {
+          if (dbSpots && dbSpots.length > 0) {
+            setSpots(dbSpots);
+          }
+        })
+        .catch(err => console.error('Gagal menarik data dari Supabase/AI:', err));
+    }
+  }, [userLocation, locationName]);
 
   const handleToggleSave = (spot: Spot) => {
     setSavedSpots(prev => {
@@ -1588,8 +1881,14 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <div className="min-h-screen bg-transparent font-sans text-on-surface select-none">
-        <iframe src="/background.html" title="3D Background" className="fixed inset-0 w-full h-full border-none pointer-events-none z-[-1]" aria-hidden="true" tabIndex={-1} scrolling="no" />
+      <div className="min-h-screen bg-transparent font-sans text-on-surface select-none relative">
+        <div className="fixed inset-0 -z-10 noise">
+          <div className="absolute inset-0 bg-gradient-to-b from-[#FFF7ED] via-[#FFFCF7] to-white"></div>
+          <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-[#FDBA74] rounded-full blob opacity-40"></div>
+          <div className="absolute bottom-[-15%] left-[-10%] w-[600px] h-[600px] bg-[#FED7AA] rounded-full blob blob-2 opacity-50"></div>
+          <div className="absolute top-[30%] left-[40%] w-[400px] h-[400px] bg-[#FCA5A5] rounded-full blob blob-3 opacity-30"></div>
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#00000008_1px,transparent_1px),linear-gradient(to_bottom,#00000008_1px,transparent_1px)] bg-[size:48px_48px]"></div>
+        </div>
         {!userLocation && (
           <div className="fixed inset-0 z-[100] bg-surface-bright flex flex-col items-center justify-center space-y-6">
             <div className="relative">
@@ -1609,7 +1908,7 @@ export default function App() {
           </div>
         )}
 
-        {currentPage !== 'detail' && <TopAppBar onNavigateToAI={() => setCurrentPage('ai-finder')} />}
+        {currentPage !== 'detail' && <TopAppBar onNavigateToHome={() => setCurrentPage('radar')} onNavigateToAI={() => setCurrentPage('ai-finder')} onNavigateToSpots={() => setCurrentPage('spots')} />}
 
         <main className="relative z-10">
           <AnimatePresence mode="wait">
@@ -1631,7 +1930,7 @@ export default function App() {
                 />
               )}
               {currentPage === 'spots' && (
-                <SpotsPage spots={spots} userLocation={userLocation} onSelectSpot={handleSelectSpot} />
+                <SpotsPage spots={spots} userLocation={userLocation} locationName={locationName} onSelectSpot={handleSelectSpot} />
               )}
               {currentPage === 'ai-finder' && <AIFinderPage spots={spots} userLocation={userLocation} locationName={locationName} onSelectSpot={handleSelectSpot} />}
               {currentPage === 'saved' && <SavedPage savedSpots={savedSpots} onSelectSpot={handleSelectSpot} />}

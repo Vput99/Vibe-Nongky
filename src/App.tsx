@@ -18,7 +18,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { APIProvider, Map, AdvancedMarker, InfoWindow, Pin, useMapsLibrary, useMap } from '@vis.gl/react-google-maps';
 import { GoogleGenAI } from "@google/genai";
-import { fetchSpotsWithAutoGrow } from './lib/onDemandDatabase';
+import { fetchSpotsWithAutoGrow, saveScrapedSpotsToSupabase } from './lib/onDemandDatabase';
 
 // --- Auth / Key Config ---
 const MAP_KEY =
@@ -37,7 +37,7 @@ const hasValidKey = Boolean(MAP_KEY) && MAP_KEY !== 'YOUR_API_KEY';
 const ai = new GoogleGenAI({ apiKey: GEMINI_KEY || 'MISSING_KEY' });
 
 // --- Types ---
-type Page = 'radar' | 'spots' | 'ai-finder' | 'detail' | 'saved';
+type Page = 'radar' | 'spots' | 'ai-finder' | 'detail' | 'saved' | 'categories';
 
 interface Review {
   id: string;
@@ -221,18 +221,12 @@ function getDistance(l1: { lat: number, lng: number }, l2: { lat: number, lng: n
 
 // --- Components ---
 
-const TopAppBar = ({ onNavigateToHome, onNavigateToAI, onNavigateToSpots }: { onNavigateToHome: () => void, onNavigateToAI: () => void, onNavigateToSpots: () => void }) => (
+const TopAppBar = ({ onNavigateToHome, onNavigateToAI, onNavigateToSpots, onNavigateToCategories }: { onNavigateToHome: () => void, onNavigateToAI: () => void, onNavigateToSpots: () => void, onNavigateToCategories: () => void }) => (
   <nav className="relative z-50 glass-header w-full h-[78px]">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
       <div className="flex items-center justify-between h-full">
         <button onClick={onNavigateToHome} className="flex items-center gap-3 text-left">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-600 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/20 rotate-3">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <path d="M4 8h12a2 2 0 0 1 2 2v1a5 5 0 0 1-5 5H7a3 3 0 0 1-3-3V8Z" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-              <path d="M16 10h2a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2h-1" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-              <path d="M6 8V6a2 2 0 0 1 2-2h2" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.7"/>
-            </svg>
-          </div>
+          <img src="/Logo Vibe.png" alt="Vibe Nongky Logo" className="h-[42px] w-auto" />
           <div>
             <span className="text-[22px] font-extrabold tracking-tight text-zinc-900">Vibe<span className="gradient-text">Nongky</span></span>
             <div className="-mt-1.5 text-[10px] font-semibold tracking-widest text-orange-600/80 uppercase">Cari • Nongkrong • Vibe</div>
@@ -242,9 +236,7 @@ const TopAppBar = ({ onNavigateToHome, onNavigateToAI, onNavigateToSpots }: { on
         <div className="hidden lg:flex items-center gap-8">
           <button onClick={onNavigateToHome} className="text-[15px] font-medium text-zinc-700 hover:text-black transition">Beranda</button>
           <button onClick={onNavigateToSpots} className="text-[15px] font-medium text-zinc-700 hover:text-black transition">Jelajah</button>
-          <a href="#" className="text-[15px] font-medium text-zinc-700 hover:text-black transition">Kategori</a>
-          <a href="#" className="text-[15px] font-medium text-zinc-700 hover:text-black transition">Kota</a>
-          <a href="#" className="text-[15px] font-medium text-zinc-700 hover:text-black transition">Untuk Owner</a>
+          <button onClick={onNavigateToCategories} className="text-[15px] font-medium text-zinc-700 hover:text-black transition">Kategori</button>
         </div>
 
         <div className="flex items-center gap-3">
@@ -265,6 +257,7 @@ const BottomNavBar = ({ activePage, setActivePage }: { activePage: Page, setActi
   const tabs: { id: Page, icon: any, label: string }[] = [
     { id: 'radar' as const, icon: MapPin, label: 'Beranda' },
     { id: 'spots' as const, icon: Coffee, label: 'Eksplor' },
+    { id: 'categories' as const, icon: List, label: 'Kategori' },
     { id: 'ai-finder' as const, icon: Sparkles, label: 'AI Asisten' },
     { id: 'saved' as any, icon: Bookmark, label: 'Tersimpan' }
   ];
@@ -349,13 +342,15 @@ const RadarPing = ({ spot, angle, radius }: { spot: Spot, angle: number, radius:
   );
 };
 
-const HomePage = ({ spots, userLocation, locationName, setLocationName, onSelectSpot, onNavigateToAI }: { 
+const HomePage = ({ spots, userLocation, locationName, setLocationName, onSelectSpot, onNavigateToAI, onSearch, onSpotsScraped }: { 
   spots: Spot[], 
   userLocation: { lat: number, lng: number } | null, 
   locationName: string, 
   setLocationName: (name: string) => void,
   onSelectSpot: (s: Spot) => void, 
-  onNavigateToAI: () => void 
+  onNavigateToAI: () => void,
+  onSearch: (query: string) => void,
+  onSpotsScraped?: (spots: Spot[]) => void
 }) => {
   const [nearbyResults, setNearbyResults] = useState<Spot[]>([]);
   const [loadingNearby, setLoadingNearby] = useState(false);
@@ -370,10 +365,10 @@ const HomePage = ({ spots, userLocation, locationName, setLocationName, onSelect
       setLoadingNearby(true);
       try {
         const queryMap: Record<string, string> = {
-          'Semua': 'Restaurant OR Cafe OR Warung OR Warkop OR Kedai',
-          'Cafe': 'Cafe OR Coffee Shop OR Kopi',
-          'Restoran': 'Restaurant OR Tempat Makan',
-          'Warung': 'Warung OR Warkop OR Kedai OR Angkringan'
+          'Semua': 'Restaurant OR Cafe OR Warung OR Warkop OR Kedai di Kediri',
+          'Cafe': 'Cafe OR Coffee Shop OR Kopi di Kediri',
+          'Restoran': 'Restaurant OR Tempat Makan di Kediri',
+          'Warung': 'Warung OR Warkop OR Kedai OR Angkringan di Kediri'
         };
         const textQuery = queryMap[activeCategory];
 
@@ -381,10 +376,10 @@ const HomePage = ({ spots, userLocation, locationName, setLocationName, onSelect
           textQuery: textQuery,
           locationBias: {
             center: userLocation,
-            radius: 1500,
+            radius: 30000,
           },
           fields: ['id', 'displayName', 'location', 'formattedAddress', 'rating', 'userRatingCount', 'priceLevel', 'photos', 'reviews'],
-          maxResultCount: 15,
+          maxResultCount: 20,
           rankPreference: 'DISTANCE'
         });
 
@@ -418,6 +413,9 @@ const HomePage = ({ spots, userLocation, locationName, setLocationName, onSelect
         }) as Spot[];
 
         setNearbyResults(processed);
+        if (onSpotsScraped && processed.length > 0) {
+          onSpotsScraped(processed);
+        }
 
         if (locationName.includes('Kordinat') || locationName.includes('Mencari Lokasi')) {
           const firstResult = processed[0];
@@ -445,7 +443,9 @@ const HomePage = ({ spots, userLocation, locationName, setLocationName, onSelect
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onNavigateToAI();
+    if (searchQuery.trim()) {
+      onSearch(searchQuery);
+    }
   };
 
   return (
@@ -473,30 +473,13 @@ const HomePage = ({ spots, userLocation, locationName, setLocationName, onSelect
             Dari warkop hidden gem 15 ribuan, cafe estetik buat WFC, sampai warung kopi yang buka sampai pagi. Filter by vibe, bukan cuma rating. Lokasi Anda: <span className="font-bold">{locationName.replace('.OS', '')}</span>.
           </p>
 
-          {/* Search */}
+          {/* AI Search CTA */}
           <div className="mt-8 relative">
-            <div className="relative bg-white rounded-[20px] shadow-[0_20px_60px_-15px_rgba(234,88,12,0.25)] border border-zinc-200 p-2">
-              <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-2">
-                <div className="flex-1 flex items-center gap-3 pl-4 pr-2 h-[56px] bg-zinc-50 rounded-[14px] border border-zinc-100">
-                  <svg className="shrink-0 text-zinc-400" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                  <input 
-                    type="text" 
-                    placeholder="Cari 'cafe WFC di Bandung'..." 
-                    className="w-full bg-transparent outline-none text-[15px] placeholder:text-zinc-400 font-medium text-zinc-900"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <button type="button" onClick={() => { setActiveCategory('Semua'); }} className="h-[56px] px-4 rounded-[14px] bg-zinc-900/5 hover:bg-zinc-900/10 text-zinc-700 font-semibold text-[14px] flex items-center gap-2 transition whitespace-nowrap">
-                    <MapPin size={18} />
-                    <span className="hidden sm:inline">Sekitar</span>
-                  </button>
-                  <button type="submit" className="h-[56px] px-7 rounded-[14px] bg-gradient-to-b from-orange-600 to-orange-700 text-white font-bold text-[15px] shadow-lg shadow-orange-600/25 hover:shadow-orange-600/30 hover:-translate-y-[1px] active:translate-y-[0px] transition">
-                    Cari
-                  </button>
-                </div>
-              </form>
+            <div className="mb-4">
+              <button onClick={onNavigateToAI} className="w-full sm:w-auto px-6 py-4 bg-zinc-900 hover:bg-zinc-800 text-white rounded-[16px] font-bold text-[15px] shadow-lg shadow-zinc-900/20 active:scale-95 transition flex items-center justify-center gap-2">
+                <Sparkles size={18} className="text-orange-400" />
+                Cari Tempat Spesifik dengan AI
+              </button>
             </div>
 
             {/* Quick filters */}
@@ -644,7 +627,7 @@ const HomePage = ({ spots, userLocation, locationName, setLocationName, onSelect
   );
 };
 
-const AIFinderPage = ({ spots, userLocation, locationName, onSelectSpot }: { spots: Spot[], userLocation: { lat: number, lng: number } | null, locationName: string, onSelectSpot: (s: Spot) => void }) => {
+const AIFinderPage = ({ spots, userLocation, locationName, onSelectSpot, onSpotsScraped }: { spots: Spot[], userLocation: { lat: number, lng: number } | null, locationName: string, onSelectSpot: (s: Spot) => void, onSpotsScraped?: (spots: Spot[]) => void }) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Spot[]>([]);
   const [searching, setSearching] = useState(false);
@@ -665,7 +648,7 @@ const AIFinderPage = ({ spots, userLocation, locationName, onSelectSpot }: { spo
       if (userLocation) {
         searchOptions.locationBias = {
           center: userLocation,
-          radius: 20000
+          radius: 30000
         };
       }
 
@@ -695,6 +678,9 @@ const AIFinderPage = ({ spots, userLocation, locationName, onSelectSpot }: { spo
         };
       });
       setResults(processedResults);
+      if (onSpotsScraped && processedResults.length > 0) {
+        onSpotsScraped(processedResults);
+      }
     } catch (err) {
       console.error('SEARCH_PROTOCOL_FAILURE:', err);
     } finally {
@@ -1339,10 +1325,10 @@ const MapView = ({ spots, userLocation, onSelectSpot }: { spots: Spot[], userLoc
 
 // --- Main App ---
 
-const SpotsPage = ({ spots, userLocation, locationName, onSelectSpot }: { spots: Spot[], userLocation: { lat: number, lng: number } | null, locationName: string, onSelectSpot: (s: Spot) => void }) => {
+const SpotsPage = ({ spots, userLocation, locationName, onSelectSpot, initialFilter = '', initialSearch = '' }: { spots: Spot[], userLocation: { lat: number, lng: number } | null, locationName: string, onSelectSpot: (s: Spot) => void, initialFilter?: string, initialSearch?: string }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState('');
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
+  const [activeFilter, setActiveFilter] = useState(initialFilter);
   const [activeVibes, setActiveVibes] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<number>(75);
   const [activeFacilities, setActiveFacilities] = useState<string[]>([]);
@@ -1365,7 +1351,19 @@ const SpotsPage = ({ spots, userLocation, locationName, onSelectSpot }: { spots:
 
     // Search query
     if (searchQuery) {
-      filtered = filtered.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.location.toLowerCase().includes(searchQuery.toLowerCase()));
+      const q = searchQuery.toLowerCase();
+      const cleanQ = q.replace(/terdekat|sekitar|cafe|tempat|nongkrong/g, '').trim();
+      
+      filtered = filtered.filter(s => {
+        const matchesName = cleanQ ? (s.name.toLowerCase().includes(cleanQ) || s.location.toLowerCase().includes(cleanQ) || s.vibe?.toLowerCase().includes(cleanQ)) : true;
+        
+        let matchesIntent = true;
+        if (q.includes('murah')) matchesIntent = s.price === '$';
+        if (q.includes('24 jam') || q.includes('24jam')) matchesIntent = !!(s.openUntil?.includes('24') || s.openUntil?.includes('Buka'));
+        if (q.includes('wfc') || q.includes('kerja')) matchesIntent = !!s.stats?.wifi;
+        
+        return matchesName && matchesIntent;
+      });
     }
 
     // Sidebar Vibes
@@ -1379,12 +1377,28 @@ const SpotsPage = ({ spots, userLocation, locationName, onSelectSpot }: { spots:
        if (activeFacilities.includes('AC')) filtered = filtered.filter(s => s.rating >= 4.0);
     }
 
+    // Price Range Filter
+    filtered = filtered.filter(s => {
+       if (priceRange <= 25) return s.price === '$';
+       if (priceRange <= 50) return s.price === '$' || s.price === '$$';
+       return true;
+    });
+
     // Sorting
-    if (sortBy === 'Rating Tertinggi') {
+    let currentSort = sortBy;
+    if (searchQuery && (searchQuery.toLowerCase().includes('terdekat') || searchQuery.toLowerCase().includes('sekitar'))) {
+       currentSort = 'Terdekat';
+    }
+
+    if (currentSort === 'Rating Tertinggi') {
        filtered.sort((a, b) => b.rating - a.rating);
-    } else if (sortBy === 'Terdekat') {
-       filtered.sort((a, b) => parseFloat(a.distance || '0') - parseFloat(b.distance || '0'));
-    } else if (sortBy === 'Paling Ramai') {
+    } else if (currentSort === 'Terdekat') {
+       filtered.sort((a, b) => {
+         const distA = parseFloat(a.distance?.replace(/[^0-9.]/g, '') || '0');
+         const distB = parseFloat(b.distance?.replace(/[^0-9.]/g, '') || '0');
+         return distA - distB;
+       });
+    } else if (currentSort === 'Paling Ramai') {
        filtered.sort((a, b) => (b.stats?.occupancy || 0) - (a.stats?.occupancy || 0));
     }
 
@@ -1428,23 +1442,8 @@ const SpotsPage = ({ spots, userLocation, locationName, onSelectSpot }: { spots:
             </div>
         </div>
 
-        {/* Search Bar */}
+        {/* Quick filters container */}
         <div className="bg-white/80 glass rounded-[20px] border border-black/10 p-3 shadow-[0_8px_24px_rgba(0,0,0,0.06)] mb-6 relative z-10">
-            <div className="flex flex-col sm:flex-row gap-2.5">
-                <div className="flex-1 relative">
-                    <svg className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                    <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} type="text" placeholder="Cari 'cafe WFC di Bandung', 'warkop 24 jam'..." className="w-full h-11 pl-10 pr-3 rounded-xl bg-zinc-50 border border-transparent focus:border-orange-600/30 focus:bg-white focus:outline-none text-[14px] text-zinc-900" />
-                </div>
-                <div className="flex gap-2">
-                    <button className="h-11 px-3.5 rounded-xl bg-zinc-50 hover:bg-zinc-100 text-[13px] font-medium flex items-center gap-1.5 whitespace-nowrap text-zinc-700 transition">
-                        <MapPin size={14} />
-                        Sekitar
-                    </button>
-                    <button className="h-11 px-5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-[14px] font-semibold shadow-[0_4px_12px_rgba(255,107,44,0.25)] transition">
-                        Cari
-                    </button>
-                </div>
-            </div>
             {/* Quick filters */}
             <div className="flex items-center gap-2 mt-3 overflow-x-auto scrollbar-hide">
                 {[
@@ -1661,14 +1660,366 @@ const SpotsPage = ({ spots, userLocation, locationName, onSelectSpot }: { spots:
   );
 };
 
+const CategoriesPage = ({ onSelectCategory, onNavigateToAI }: { onSelectCategory: (category: string) => void, onNavigateToAI: () => void }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="pb-24 relative pt-6"
+    >
+      <section className="relative pt-16 pb-12 px-6">
+        <div className="max-w-[1200px] mx-auto text-center">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-orange-50 border border-orange-100 rounded-full mb-6">
+                <span className="w-2 h-2 bg-[#FF6B35] rounded-full animate-pulse"></span>
+                <span className="text-[12px] font-semibold text-orange-700 tracking-wide">KEDIRI EDITION • 127 TEMPAT</span>
+            </div>
+            
+            <h1 className="text-[48px] md:text-[64px] lg:text-[72px] font-extrabold leading-[0.9] tracking-tight text-gray-900 mb-6">
+                Eksplor
+                <span className="gradient-text relative inline-block ml-3">
+                    Kategori
+                    <svg className="absolute -bottom-3 left-0 w-full" height="12" viewBox="0 0 200 12" fill="none">
+                        <path d="M2 8C50 2 150 2 198 8" stroke="url(#grad)" strokeWidth="3" strokeLinecap="round"/>
+                        <defs><linearGradient id="grad"><stop stopColor="#FF6B35"/><stop offset="1" stopColor="#FF8C5A"/></linearGradient></defs>
+                    </svg>
+                </span>
+            </h1>
+            
+            <p className="text-[17px] md:text-[18px] text-gray-600 max-w-[580px] mx-auto leading-relaxed mt-10">
+                Pilih suasana yang paling pas untuk harimu. Temukan tempat nongkrong terbaik berdasarkan kategori favorit.
+            </p>
+
+            <div className="flex flex-wrap items-center justify-center gap-2 mt-10">
+                <button onClick={() => onSelectCategory('')} className="px-4 py-2 bg-gray-900 text-white text-[13px] font-medium rounded-full">Semua</button>
+                <button onClick={() => onSelectCategory('estetik')} className="px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-[13px] font-medium rounded-full border border-gray-200 transition">Paling Populer</button>
+                <button onClick={() => onSelectCategory('24jam')} className="px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-[13px] font-medium rounded-full border border-gray-200 transition">Buka Sekarang</button>
+                <button onClick={() => onSelectCategory('murah')} className="px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-[13px] font-medium rounded-full border border-gray-200 transition">Promo Hari Ini</button>
+            </div>
+        </div>
+      </section>
+
+      <section className="relative px-6">
+        <div className="max-w-[1200px] mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-6">
+                
+                {/* 1. Work From Cafe */}
+                <div onClick={() => onSelectCategory('wfc')} className="category-card group rounded-[28px] overflow-hidden cursor-pointer relative">
+                    <div className="relative h-[200px] overflow-hidden bg-gray-100">
+                        <img src="https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&w=800&q=80" alt="Work From Cafe" className="card-image w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent"></div>
+                        
+                        <div className="absolute top-4 left-4">
+                            <div className="icon-bubble w-[52px] h-[52px] rounded-2xl bg-[#0EA5E9] shadow-lg shadow-sky-500/30 flex items-center justify-center rotate-3 group-hover:rotate-6">
+                                <i className="ri-macbook-line text-white text-[26px]"></i>
+                            </div>
+                        </div>
+
+                        <div className="absolute top-4 right-4 flex gap-1.5">
+                            <div className="tag px-2.5 py-1.5 rounded-lg flex items-center gap-1">
+                                <i className="ri-fire-fill text-orange-500 text-xs"></i>
+                                <span className="text-[11px] font-bold text-gray-900">42</span>
+                            </div>
+                        </div>
+
+                        <div className="absolute bottom-0 left-0 right-0 p-4">
+                            <div className="flex items-center gap-2">
+                                <div className="flex -space-x-2">
+                                    <img src="https://i.pravatar.cc/24?img=1" className="w-6 h-6 rounded-full border-2 border-white" />
+                                    <img src="https://i.pravatar.cc/24?img=2" className="w-6 h-6 rounded-full border-2 border-white" />
+                                    <img src="https://i.pravatar.cc/24?img=3" className="w-6 h-6 rounded-full border-2 border-white" />
+                                </div>
+                                <span className="text-[11px] text-white/90 font-medium">128 orang WFC hari ini</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="p-5">
+                        <div className="flex items-start justify-between mb-2">
+                            <h3 className="text-[20px] font-bold text-gray-900 leading-tight">Work From Cafe</h3>
+                            <i className="ri-arrow-right-up-line text-gray-400 group-hover:text-[#FF6B35] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all text-xl"></i>
+                        </div>
+                        <p className="text-[14px] text-gray-600 leading-snug mb-4">Tempat ideal buat nugas, meeting, atau kerja remote</p>
+                        
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-5 h-5 rounded-lg bg-sky-50 flex items-center justify-center">
+                                    <i className="ri-wifi-line text-sky-600 text-[12px]"></i>
+                                </div>
+                                <span className="text-[12px] text-gray-600">WiFi Kencang</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-5 h-5 rounded-lg bg-emerald-50 flex items-center justify-center">
+                                    <i className="ri-plug-line text-emerald-600 text-[12px]"></i>
+                                </div>
+                                <span className="text-[12px] text-gray-600">Stopkontak</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="shimmer absolute inset-0 pointer-events-none rounded-[28px]"></div>
+                </div>
+
+                {/* 2. Buka 24 Jam */}
+                <div onClick={() => onSelectCategory('24jam')} className="category-card group rounded-[28px] overflow-hidden cursor-pointer relative">
+                    <div className="relative h-[200px] overflow-hidden bg-gray-900">
+                        <img src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=800&q=80" alt="Buka 24 Jam" className="card-image w-full h-full object-cover opacity-90" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-violet-950/80 via-violet-900/30 to-transparent"></div>
+                        
+                        <div className="absolute top-4 left-4">
+                            <div className="icon-bubble w-[52px] h-[52px] rounded-2xl bg-[#7C3AED] shadow-lg shadow-violet-500/30 flex items-center justify-center -rotate-3 group-hover:-rotate-6">
+                                <i className="ri-moon-clear-fill text-white text-[24px]"></i>
+                            </div>
+                        </div>
+
+                        <div className="absolute top-4 right-4">
+                            <div className="tag px-2.5 py-1.5 rounded-lg bg-green-500/90 border-0">
+                                <span className="text-[11px] font-bold text-white flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
+                                    BUKA
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="absolute bottom-0 left-0 right-0 p-4">
+                            <div className="flex items-center gap-2">
+                                <i className="ri-time-line text-white/80 text-sm"></i>
+                                <span className="text-[11px] text-white/90 font-medium">18 tempat buka sekarang</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="p-5">
+                        <div className="flex items-start justify-between mb-2">
+                            <h3 className="text-[20px] font-bold text-gray-900 leading-tight">Buka 24 Jam</h3>
+                            <i className="ri-arrow-right-up-line text-gray-400 group-hover:text-[#FF6B35] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all text-xl"></i>
+                        </div>
+                        <p className="text-[14px] text-gray-600 leading-snug mb-4">Nongkrong santai sampai pagi tanpa takut diusir</p>
+                        
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-5 h-5 rounded-lg bg-violet-50 flex items-center justify-center">
+                                    <i className="ri-moon-line text-violet-600 text-[12px]"></i>
+                                </div>
+                                <span className="text-[12px] text-gray-600">Night Owl</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-5 h-5 rounded-lg bg-amber-50 flex items-center justify-center">
+                                    <i className="ri-cup-line text-amber-600 text-[12px]"></i>
+                                </div>
+                                <span className="text-[12px] text-gray-600">Kopi Malam</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="shimmer absolute inset-0 pointer-events-none rounded-[28px]"></div>
+                </div>
+
+                {/* 3. Murah Meriah */}
+                <div onClick={() => onSelectCategory('murah')} className="category-card group rounded-[28px] overflow-hidden cursor-pointer relative">
+                    <div className="relative h-[200px] overflow-hidden bg-gray-100">
+                        <img src="https://images.unsplash.com/photo-1501339817302-38203b9f9fef?auto=format&fit=crop&w=800&q=80" alt="Murah Meriah" className="card-image w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent"></div>
+                        
+                        <div className="absolute top-4 left-4">
+                            <div className="icon-bubble w-[52px] h-[52px] rounded-2xl bg-[#10B981] shadow-lg shadow-emerald-500/30 flex items-center justify-center rotate-3 group-hover:rotate-6">
+                                <i className="ri-wallet-3-fill text-white text-[24px]"></i>
+                            </div>
+                        </div>
+
+                        <div className="absolute top-4 right-4">
+                            <div className="tag px-2.5 py-1.5 rounded-lg">
+                                <span className="text-[11px] font-bold text-emerald-700">Mulai 8K</span>
+                            </div>
+                        </div>
+
+                        <div className="absolute bottom-0 left-0 right-0 p-4">
+                            <div className="flex items-center gap-2">
+                                <div className="px-2 py-1 bg-white/20 backdrop-blur-md rounded-md border border-white/30">
+                                    <span className="text-[10px] font-bold text-white tracking-wide">HEMAT 50%</span>
+                                </div>
+                                <span className="text-[11px] text-white/90 font-medium">35 tempat</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="p-5">
+                        <div className="flex items-start justify-between mb-2">
+                            <h3 className="text-[20px] font-bold text-gray-900 leading-tight">Murah Meriah</h3>
+                            <i className="ri-arrow-right-up-line text-gray-400 group-hover:text-[#FF6B35] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all text-xl"></i>
+                        </div>
+                        <p className="text-[14px] text-gray-600 leading-snug mb-4">Pilihan hemat yang aman di kantong pelajar & mahasiswa</p>
+                        
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-5 h-5 rounded-lg bg-emerald-50 flex items-center justify-center">
+                                    <i className="ri-money-dollar-circle-line text-emerald-600 text-[12px]"></i>
+                                </div>
+                                <span className="text-[12px] text-gray-600">&lt; 25K</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-5 h-5 rounded-lg bg-orange-50 flex items-center justify-center">
+                                    <i className="ri-restaurant-line text-orange-600 text-[12px]"></i>
+                                </div>
+                                <span className="text-[12px] text-gray-600">Porsi Pas</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="shimmer absolute inset-0 pointer-events-none rounded-[28px]"></div>
+                </div>
+
+                {/* 4. Spot Estetik */}
+                <div onClick={() => onSelectCategory('estetik')} className="category-card group rounded-[28px] overflow-hidden cursor-pointer relative">
+                    <div className="relative h-[200px] overflow-hidden bg-gray-100">
+                        <img src="https://images.unsplash.com/photo-1521017432531-fbd92d768814?auto=format&fit=crop&w=800&q=80" alt="Spot Estetik" className="card-image w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-pink-900/20 to-transparent"></div>
+                        
+                        <div className="absolute top-4 left-4">
+                            <div className="icon-bubble w-[52px] h-[52px] rounded-2xl bg-[#EC4899] shadow-lg shadow-pink-500/30 flex items-center justify-center -rotate-3 group-hover:-rotate-6">
+                                <i className="ri-camera-lens-fill text-white text-[24px]"></i>
+                            </div>
+                        </div>
+
+                        <div className="absolute top-4 right-4">
+                            <div className="tag px-2.5 py-1.5 rounded-lg flex items-center gap-1">
+                                <i className="ri-heart-fill text-pink-500 text-xs"></i>
+                                <span className="text-[11px] font-bold text-gray-900">2.4K</span>
+                            </div>
+                        </div>
+
+                        <div className="absolute bottom-0 left-0 right-0 p-4">
+                            <div className="flex items-center gap-1.5">
+                                <i className="ri-instagram-line text-white text-sm"></i>
+                                <span className="text-[11px] text-white/90 font-medium">Paling sering di-tag</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="p-5">
+                        <div className="flex items-start justify-between mb-2">
+                            <h3 className="text-[20px] font-bold text-gray-900 leading-tight">Spot Estetik</h3>
+                            <i className="ri-arrow-right-up-line text-gray-400 group-hover:text-[#FF6B35] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all text-xl"></i>
+                        </div>
+                        <p className="text-[14px] text-gray-600 leading-snug mb-4">Desain interior cantik, cocok banget buat foto OOTD</p>
+                        
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-5 h-5 rounded-lg bg-pink-50 flex items-center justify-center">
+                                    <i className="ri-palette-line text-pink-600 text-[12px]"></i>
+                                </div>
+                                <span className="text-[12px] text-gray-600">Instagramable</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-5 h-5 rounded-lg bg-purple-50 flex items-center justify-center">
+                                    <i className="ri-sparkling-line text-purple-600 text-[12px]"></i>
+                                </div>
+                                <span className="text-[12px] text-gray-600">Aesthetic</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="shimmer absolute inset-0 pointer-events-none rounded-[28px]"></div>
+                </div>
+            </div>
+
+            {/* Second row - additional categories */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6 mt-6">
+                {/* Live Music */}
+                <div onClick={() => onSelectCategory('live')} className="category-card group rounded-[28px] p-5 flex items-center gap-4 cursor-pointer hover:bg-gradient-to-r hover:from-violet-50 hover:to-purple-50">
+                    <div className="w-[56px] h-[56px] rounded-2xl bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/20 group-hover:scale-110 transition-transform">
+                        <i className="ri-music-2-fill text-white text-2xl"></i>
+                    </div>
+                    <div className="flex-1">
+                        <h4 className="font-bold text-gray-900 mb-0.5">Live Music</h4>
+                        <p className="text-[13px] text-gray-600">Akustik & band tiap weekend</p>
+                    </div>
+                    <div className="text-right">
+                        <div className="text-[20px] font-bold text-gray-900">12</div>
+                        <div className="text-[11px] text-gray-500">tempat</div>
+                    </div>
+                </div>
+
+                {/* Outdoor Garden */}
+                <div onClick={() => onSelectCategory('outdoor')} className="category-card group rounded-[28px] p-5 flex items-center gap-4 cursor-pointer hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50">
+                    <div className="w-[56px] h-[56px] rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-110 transition-transform">
+                        <i className="ri-plant-fill text-white text-2xl"></i>
+                    </div>
+                    <div className="flex-1">
+                        <h4 className="font-bold text-gray-900 mb-0.5">Outdoor & Garden</h4>
+                        <p className="text-[13px] text-gray-600">Sejuk, hijau, santai</p>
+                    </div>
+                    <div className="text-right">
+                        <div className="text-[20px] font-bold text-gray-900">28</div>
+                        <div className="text-[11px] text-gray-500">tempat</div>
+                    </div>
+                </div>
+
+                {/* Rooftop */}
+                <div onClick={() => onSelectCategory('date')} className="category-card group rounded-[28px] p-5 flex items-center gap-4 cursor-pointer hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50">
+                    <div className="w-[56px] h-[56px] rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:scale-110 transition-transform">
+                        <i className="ri-sun-fill text-white text-2xl"></i>
+                    </div>
+                    <div className="flex-1">
+                        <h4 className="font-bold text-gray-900 mb-0.5">Rooftop View</h4>
+                        <p className="text-[13px] text-gray-600">Sunset & city lights</p>
+                    </div>
+                    <div className="text-right">
+                        <div className="text-[20px] font-bold text-gray-900">9</div>
+                        <div className="text-[11px] text-gray-500">tempat</div>
+                    </div>
+                </div>
+            </div>
+
+            {/* CTA Banner */}
+            <div className="mt-12 relative overflow-hidden rounded-[32px] bg-gradient-to-br from-gray-900 via-gray-800 to-black p-[1px]">
+                <div className="relative bg-[#0F0F0F] rounded-[31px] px-8 py-10 md:px-12 md:py-12 overflow-hidden">
+                    <div className="absolute inset-0">
+                        <div className="absolute -top-24 -right-24 w-72 h-72 bg-[#FF6B35]/20 rounded-full blur-[80px]"></div>
+                        <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-violet-500/20 rounded-full blur-[80px]"></div>
+                    </div>
+                    
+                    <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div className="flex items-center gap-5">
+                            <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center floating">
+                                <i className="ri-sparkling-2-fill text-white text-2xl"></i>
+                            </div>
+                            <div>
+                                <h3 className="text-white text-[22px] font-bold mb-1">Bingung pilih kategori?</h3>
+                                <p className="text-white/70 text-[14px]">Coba AI Asisten kami, rekomendasikan tempat sesuai mood kamu</p>
+                            </div>
+                        </div>
+                        <button onClick={onNavigateToAI} className="px-6 py-3 bg-white text-gray-900 font-semibold rounded-xl hover:bg-gray-100 transition flex items-center gap-2 whitespace-nowrap">
+                            <i className="ri-magic-line text-[#FF6B35]"></i>
+                            Tanya AI Sekarang
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+      </section>
+    </motion.div>
+  );
+};
+
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('radar');
+  const [globalFilter, setGlobalFilter] = useState('');
+  const [globalSearch, setGlobalSearch] = useState('');
   const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
   const [spots, setSpots] = useState<Spot[]>(MOCK_SPOTS);
   const [userLocation, setUserLocation] = useState<{ lat: number, lng: number } | null>(null);
   const [locationName, setLocationName] = useState<string>('Mencari Lokasi...');
   const [shareStatus, setShareStatus] = useState<string | null>(null);
   const [savedSpots, setSavedSpots] = useState<Spot[]>([]);
+
+  const handleSpotsScraped = (newSpots: Spot[]) => {
+    setSpots(prev => {
+      const existingIds = new Set(prev.map(p => p.id));
+      const uniqueNewSpots = newSpots.filter(n => !existingIds.has(n.id));
+      if (uniqueNewSpots.length > 0) {
+        saveScrapedSpotsToSupabase(uniqueNewSpots);
+        return [...prev, ...uniqueNewSpots];
+      }
+      return prev;
+    });
+  };
 
   // Integrasi Database On-Demand
   useEffect(() => {
@@ -1908,7 +2259,7 @@ export default function App() {
           </div>
         )}
 
-        {currentPage !== 'detail' && <TopAppBar onNavigateToHome={() => setCurrentPage('radar')} onNavigateToAI={() => setCurrentPage('ai-finder')} onNavigateToSpots={() => setCurrentPage('spots')} />}
+        {currentPage !== 'detail' && <TopAppBar onNavigateToHome={() => setCurrentPage('radar')} onNavigateToAI={() => setCurrentPage('ai-finder')} onNavigateToSpots={() => setCurrentPage('spots')} onNavigateToCategories={() => setCurrentPage('categories')} />}
 
         <main className="relative z-10">
           <AnimatePresence mode="wait">
@@ -1927,12 +2278,17 @@ export default function App() {
                   setLocationName={setLocationName}
                   onSelectSpot={handleSelectSpot} 
                   onNavigateToAI={() => setCurrentPage('ai-finder')} 
+                  onSearch={(q) => { setGlobalSearch(q); setCurrentPage('spots'); }}
+                  onSpotsScraped={handleSpotsScraped}
                 />
               )}
               {currentPage === 'spots' && (
-                <SpotsPage spots={spots} userLocation={userLocation} locationName={locationName} onSelectSpot={handleSelectSpot} />
+                <SpotsPage spots={spots} userLocation={userLocation} locationName={locationName} onSelectSpot={handleSelectSpot} initialFilter={globalFilter} initialSearch={globalSearch} />
               )}
-              {currentPage === 'ai-finder' && <AIFinderPage spots={spots} userLocation={userLocation} locationName={locationName} onSelectSpot={handleSelectSpot} />}
+              {currentPage === 'categories' && (
+                <CategoriesPage onSelectCategory={(cat) => { setGlobalFilter(cat); setCurrentPage('spots'); }} onNavigateToAI={() => setCurrentPage('ai-finder')} />
+              )}
+              {currentPage === 'ai-finder' && <AIFinderPage spots={spots} userLocation={userLocation} locationName={locationName} onSelectSpot={handleSelectSpot} onSpotsScraped={handleSpotsScraped} />}
               {currentPage === 'saved' && <SavedPage savedSpots={savedSpots} onSelectSpot={handleSelectSpot} />}
               {currentPage === 'detail' && selectedSpot && (
                 <DetailPage

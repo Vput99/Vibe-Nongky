@@ -15,8 +15,8 @@ export async function fetchSpotsWithAutoGrow(locationName: string, lat: number, 
   const { data: existingSpots, error } = await supabase
     .from('spots')
     .select('*')
-    // Idealnya: .rpc('nearby_spots', { lat, lng, radius_km: 5 })
-    .limit(20);
+    // Idealnya: .rpc('nearby_spots', { lat, lng, radius_km: 30 })
+    .limit(100); // Tarik lebih banyak data dari database
 
   if (error) {
     console.error('Supabase Error:', error);
@@ -61,12 +61,12 @@ export async function fetchSpotsWithAutoGrow(locationName: string, lat: number, 
         'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.rating,places.photos,places.location'
       },
       body: JSON.stringify({
-        includedTypes: ['cafe', 'coffee_shop'],
-        maxResultCount: 5, // Tarik 5 tempat nyata
+        includedTypes: ['cafe', 'coffee_shop', 'restaurant'],
+        maxResultCount: 20, // Tarik 20 tempat nyata (maksimum API)
         locationRestriction: {
           circle: {
             center: { latitude: lat, longitude: lng },
-            radius: 4000.0 // Radius 4 km
+            radius: 30000.0 // Radius 30 km (Se-Kota & Kabupaten Kediri)
           }
         }
       })
@@ -165,4 +165,34 @@ export async function fetchSpotsWithAutoGrow(locationName: string, lat: number, 
 
   console.log(`[ON-DEMAND DB] Selesai! Database kini telah berkembang secara otomatis untuk area ${locationName}.`);
   return processedSpots;
+}
+
+export async function saveScrapedSpotsToSupabase(spots: any[]) {
+  if (!spots || spots.length === 0) return;
+  console.log(`[ON-DEMAND DB] Menyimpan ${spots.length} hasil scraping baru ke Supabase...`);
+  
+  for (const s of spots) {
+    const newSpotDB = {
+        id: s.id,
+        name: s.name,
+        location: s.location,
+        vibe: s.vibe || 'Nyaman',
+        rating: s.rating || 0,
+        reviews: s.reviews || 0,
+        price: s.price || '$',
+        open_until: s.openUntil || '22:00',
+        lat: s.coordinates?.lat || 0,
+        lng: s.coordinates?.lng || 0,
+        occupancy: s.stats?.occupancy || 50,
+        wifi: s.stats?.wifi ? 'Tersedia' : 'Tidak',
+        crowd_label: s.stats?.crowd || 'Medium',
+        image_url: s.imageUrl,
+        image_urls: s.imageUrls || [s.imageUrl]
+    };
+    
+    const { error } = await supabase.from('spots').insert(newSpotDB);
+    if (error && !error.message.includes('duplicate key')) {
+      console.error('[SUPABASE] Gagal menyimpan spot:', error.message);
+    }
+  }
 }

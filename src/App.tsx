@@ -238,50 +238,6 @@ const BottomNavBar = ({ activePage, setActivePage }: { activePage: Page, setActi
 
 // --- Page Views ---
 
-// --- Radar UI Components ---
-
-const RadarPing = ({ spot, angle, radius }: { spot: Spot, angle: number, radius: number }) => {
-  const x = radius * Math.cos((angle * Math.PI) / 180);
-  const y = radius * Math.sin((angle * Math.PI) / 180);
-
-  return (
-    <motion.div
-      style={{
-        left: `${50 + x}%`,
-        top: `${50 + y}%`,
-        transformStyle: 'preserve-3d'
-      }}
-      initial={{ scale: 0, opacity: 0, translateZ: 0 }}
-      animate={{ 
-        scale: 1, 
-        opacity: 1, 
-        translateZ: [20, 40, 20],
-        rotateY: [0, 10, 0]
-      }}
-      transition={{
-        translateZ: { repeat: Infinity, duration: 2, ease: "easeInOut" },
-        rotateY: { repeat: Infinity, duration: 3, ease: "easeInOut" }
-      }}
-      className="absolute z-30 cursor-pointer group/ping preserve-3d"
-    >
-      <div className="relative">
-        <div className="w-4 h-4 bg-cyan-400 rounded-full ping-active neon-glow-cyan" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full border border-cyan-400/40 scale-0 group-hover/ping:scale-150 transition-transform duration-500" />
-
-        {/* Hover Tip */}
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 p-4 bg-surface-bright/90 backdrop-blur-md border border-cyan-400/30 opacity-0 group-hover/ping:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-[0_20px_50px_rgba(0,0,0,0.8)] skew-x-[-6deg] preserve-3d" style={{ transform: 'translateZ(100px)' }}>
-          <span className="label-mono block text-[8px] opacity-40 mb-1">NODE_IDENTIFIED</span>
-          <p className="heading-bold text-sm hologram-text">{spot.name}</p>
-          <div className="flex items-center gap-2 mt-2">
-            <div className="w-1.5 h-1.5 bg-pink-500 rounded-full animate-pulse shadow-[0_0_8px_pink]" />
-            <span className="label-mono text-[7px] text-pink-500">{spot.stats.crowd.toUpperCase()}</span>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-};
-
 const HomePage = ({ spots, userLocation, locationName, setLocationName, onSelectSpot, onNavigateToAI }: { 
   spots: Spot[], 
   userLocation: { lat: number, lng: number } | null, 
